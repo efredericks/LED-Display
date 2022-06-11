@@ -1,10 +1,16 @@
 from evdev import InputDevice, categorize, ecodes
+from copy import deepcopy
 import flaschen
 import random
 import math
 from time import sleep
 
 from select import select
+
+# MAP DEFINES
+EMPTY = 0
+CROSS = 1
+SQUARES = 2
 
 gamepad = InputDevice('/dev/input/event0')
 
@@ -25,16 +31,12 @@ triggeredEndGame = False
 
 # AI playing until user presses a button
 attractMode = True
+maxLength = 0
 
-# remove diag
 directions = [
-#  [-1,-1],
   [0,-1],
-#  [1,-1],
   [1,0],
-#  [1,1],
   [0,1],
-#  [-1,1],
   [-1,0]
 ]
 maze_colors = {
@@ -45,6 +47,9 @@ maze_colors = {
   player: (0,255,0),
   fruit: (255, 255, 0),
 }
+
+# https://medium.com/technology-invention-and-more/how-to-build-a-simple-neural-network-in-9-lines-of-python-code-cc8f23647ca1
+# ANN
 
 def generate_maze(num = None):
     maze = []
@@ -105,15 +110,24 @@ def get_neighbors(maze, x, y):
     return neighbor_list
 
 
+def is_valid(maze, x, y):
+    if x >= 1 and x <= len(maze[0]) - 2 and y >= 1 and y <= len(maze) - 2:
+        return True
+    return False
+
 
 def get_pos(maze):
-  done = False
-  while not done:
-    p_x = int(random.random()*len(maze[0]))
-    p_y = int(random.random()*len(maze))
+    done = False
+    while not done:
+        p_x = random.randint(1,len(maze[0])-1)#int(random.random()*len(maze[0]))
+        p_y = random.randint(1,len(maze)-1)#int(random.random()*len(maze))
 
-    if (maze[p_y][p_x] == cell):
-      return (p_x, p_y)
+        if (maze[p_y][p_x] == cell):
+            done = True
+            break
+
+    return (p_x, p_y)
+
 
 # key handlers
 def Lkey():
@@ -129,6 +143,11 @@ def newMap():
     global triggeredEndGame
     print("New map")
     triggeredEndGame = True
+    return ""
+def startBtn():
+    global attractMode
+    attractMode = not attractMode
+    print("Attract mode: {0}".format(attractMode))
     return ""
 def endGame():
     return "done"
@@ -151,7 +170,7 @@ KEYCODES = {
   'B': {'key': 289,'callback': test},
   'X': {'key': 291,'callback': test},
   'Y': {'key': 292,'callback': test},
-  'START':{'key': 299, 'callback': endGame},
+  'START':{'key': 299, 'callback': startBtn},#endGame},
   'SELECT':{'key': 298, 'callback': newMap},
 }
 
@@ -190,7 +209,6 @@ done = False
 # handle events
 
 # https://github.com/CodingTrain/website-archive/blob/main/CodingChallenges/CC_115_Snake_Game_Redux/P5/snake.js
-from copy import deepcopy
 class Snake():
     def __init__(self, ft):
         pos = get_pos(maze)
@@ -200,6 +218,10 @@ class Snake():
         self.ydir = 0
         self.len = 0
         self.ft = ft
+        self.watchdog = []
+
+    def getLength(self):
+        return len(self.body)
 
     def reset(self):
         pos = get_pos(maze)
@@ -208,6 +230,75 @@ class Snake():
         self.xdir = 0
         self.ydir = 0
         self.len = 0
+
+    def get_head(self):
+        return deepcopy(self.body[len(self.body)-1])
+
+    def expertControl(self, maze, fruits):
+        # calculate manhattan distance to each fruit
+        # this is currently ignoring any obstacles...
+        head = self.get_head()
+        min_dist = 9999
+        target_idx = 0
+        for i in xrange(len(fruits)):
+            f = fruits[i]
+            dist = abs(head[0] - f[0]) + abs(head[1] - f[1])
+            if dist < min_dist:
+                min_dist = dist
+                target_idx = i
+            #dists.append(dist)
+
+        # control - prefer x?
+        tgt_x = fruits[target_idx][0]
+        tgt_y = fruits[target_idx][1]
+        if head[0] < tgt_x:
+            self.xdir = 1
+            self.ydir = 0
+        elif head[0] > tgt_x:
+            self.xdir = -1
+            self.ydir = 0
+        elif head[1] < tgt_y:
+            self.xdir = 0
+            self.ydir = 1
+        else:
+            self.xdir = 0
+            self.ydir = -1
+
+        # collision check
+        next_x = head[0] + self.xdir
+        next_y = head[1] + self.ydir
+        if self.endgame(next_x, next_y):
+            random.shuffle(directions)
+            for d in directions:
+                next_x = head[0] + d[0]
+                next_y = head[1] + d[1]
+                if not self.endgame(next_x, next_y):
+                    self.xdir = d[0]
+                    self.ydir = d[1]
+
+        # watchdog to see if "stuck"
+        # average distances < 4
+        if len(self.watchdog) < 20:
+            self.watchdog.append(head)
+        else:
+            dists = 0
+            for w in self.watchdog:
+                dists += float(abs(w[0] - head[0]) + abs(w[1] - head[1]))
+            dists /= float(len(self.watchdog))
+            print(dists)
+            if dists < 2.0:
+                print("stuck!")
+                random.shuffle(directions)
+                direction = directions[0]
+                self.xdir = direction[0]
+                self.ydir = direction[1]
+            self.watchdog = []
+
+
+
+
+
+
         
 
     def setDir(self, x, y):
@@ -215,42 +306,54 @@ class Snake():
         self.ydir = y
 
     def update(self):
-        head = deepcopy(self.body[len(self.body)-1])
+        head = self.get_head()#deepcopy(self.body[len(self.body)-1])
         self.body.pop(0)
         head[0] += self.xdir
         head[1] += self.ydir
         self.body.append(head)
 
     def grow(self):
-        head = deepcopy(self.body[len(self.body)-1])
+        head = self.get_head()#deepcopy(self.body[len(self.body)-1])
         self.len += 1
         self.body.append(head)
 
-    def endgame(self):
-        x = self.body[len(self.body)-1][0]
-        y = self.body[len(self.body)-1][1]
+    def endgame(self, _x = -1, _y = -1):
+        head = self.get_head()
+        retval = False
+
+        if _x == -1 and _y == -1:
+            x = head[0]#self.body[len(self.body)-1][0]
+            y = head[1]#self.body[len(self.body)-1][1]
+        else:
+            x = _x
+            y = _y
 
         # wall collision
         if x > self.ft.width-1 or x < 0 or y > self.ft.height-1 or y < 0:
-            return True
+            retval = True
+            #return True
 
         # self collision
         for i in xrange(0, len(self.body)-1):
             if self.body[i][0] == x and self.body[i][1] == y:
-                return True
+                retval = True
+                #return True
 
         if maze[y][x] == wall:
-            return True
+            retval = True
 
-        return False
+        return retval
 
     def eat(self, _fruits):
-        x = self.body[len(self.body)-1][0]
-        y = self.body[len(self.body)-1][1]
+        head = self.get_head()
+        x = head[0]#self.body[len(self.body)-1][0]
+        y = head[1]#self.body[len(self.body)-1][1]
+        #x = self.body[len(self.body)-1][0]
+        #y = self.body[len(self.body)-1][1]
 
         for i in xrange(len(_fruits)):
             if x == _fruits[i][0] and y == _fruits[i][1]:
-                print(_fruits)
+                #print(_fruits)
                 self.grow()
                 return i
         return -1
@@ -261,9 +364,6 @@ class Snake():
 
 snake = Snake(ft)
 fruits = []
-
-
-
 
 ## initially draw
 drawMap(ft, maze)
@@ -281,49 +381,44 @@ while not done:
 
     # keyboard events
     for k,v in KEYCODES.iteritems():
-        if KEYCODES["A"]["key"] in keys:
-            snake.grow()
         if v["key"] in keys:
             r = v["callback"]()
             if r == "done":
                 done = True
 
-    # dpad events
-    if gamepad.absinfo(ecodes.ABS_X).value < 128:
-        snake.setDir(-1,0)
-    if gamepad.absinfo(ecodes.ABS_X).value > 128:
-        snake.setDir(1,0)
-    if gamepad.absinfo(ecodes.ABS_Y).value < 128:
-        snake.setDir(0,-1)
-    if gamepad.absinfo(ecodes.ABS_Y).value > 128:
-        snake.setDir(0,1)
-#        elif event.type == ecodes.EV_ABS:
-#            if event.code == ecodes.ABS_X:
-#                if event.value == 0:
-#    #            print('left')
-#                    snake.setDir(-1,0)
-#                elif event.value == 255:
-#    #            print('right')
-#                    snake.setDir(1,0)
-#            elif event.code == ecodes.ABS_Y:
-#                if event.value == 0:
-#    #            print('up')
-#                    snake.setDir(0,-1)
-#                elif event.value == 255:
-#    #            print('down')
-#                    snake.setDir(0,1)
+    # multiple key handler (irrespective of mode)
+    if KEYCODES["L"]["key"] in keys and KEYCODES["R"]["key"] in keys:
+        done = endGame()
 
+    # player control
+    if not attractMode:
+        if KEYCODES["A"]["key"] in keys:
+            snake.grow()
 
+        # dpad events
+        if gamepad.absinfo(ecodes.ABS_X).value < 128:
+            snake.setDir(-1,0)
+        if gamepad.absinfo(ecodes.ABS_X).value > 128:
+            snake.setDir(1,0)
+        if gamepad.absinfo(ecodes.ABS_Y).value < 128:
+            snake.setDir(0,-1)
+        if gamepad.absinfo(ecodes.ABS_Y).value > 128:
+            snake.setDir(0,1)
+    # AI
+    else:
+        snake.expertControl(maze, fruits)
+
+    # eat fruit
     fruit_idx = snake.eat(fruits)
     snake.update()
     snake.show()
 
+    # remove fruit from list if it was eaten
     if fruit_idx > -1:
         del fruits[fruit_idx]
 
-    #if (ret_eat): fruitActive = False
-
-    if len(fruits) > 0:#fruitActive:
+    # ensure we have a fruit!
+    if len(fruits) > 0:
         for f in fruits:
             ft.set(f[0], f[1], maze_colors[fruit])
     else: # ensure we always have 1
@@ -333,10 +428,18 @@ while not done:
     if random.random() > 0.8 and len(fruits) < 5:
         fruits.append(get_pos(maze))
 
+    # draw to matrix
     ft.send()
 
-
+    # reset game
     if snake.endgame() or triggeredEndGame == True:
+        if maxLength < snake.getLength():
+            maxLength = snake.getLength()
+            print("New best: {0}".format(maxLength))
+        else:
+            print("Prior best: {0}".format(maxLength))
+
+
         triggeredEndGame = False
         clearScreen(ft, (180,0,0))
         ft.send()
@@ -344,63 +447,6 @@ while not done:
         snake.reset()
         maze = generate_maze()
 
-
-    
-
-
-    """
-
-    #print(categorize(event))
-    # keyboard events
-    if event.type == ecodes.EV_KEY:
-        if event.value == KEYDOWN:
-            for k,v in KEYCODES.iteritems():
-                if event.code == v["key"]:
-                    r = v["callback"]()
-                    if r == "done":
-                        done = True
-
-
-    # dpad events
-    elif event.type == ecodes.EV_ABS:
-        next_r = player_row
-        next_c = player_col
-        if event.code == ecodes.ABS_X:
-            if event.value == 0:
-    #            print('left')
-                next_c -= 1
-            elif event.value == 255:
-    #            print('right')
-                next_c += 1
-        elif event.code == ecodes.ABS_Y:
-            if event.value == 0:
-    #            print('up')
-                next_r -= 1
-            elif event.value == 255:
-    #            print('down')
-                next_r += 1
-
-        #print(player_col, player_row)
-        if next_r >= 0 and next_r <= 63 and next_c >= 0 and next_c <= 63:
-            if maze[next_r][next_c] in WALKABLE:
-                player_col = next_c
-                player_row = next_r
-        #if player_col == win_col and player_row == win_row:
-        if maze[player_row][player_col] == end:
-            clearScreen(ft, (0,180,0))
-            ft.send()
-            sleep(2)
-
-            maze = random_walk(ft.width, ft.height)
-            p = get_pos(maze)
-            player_col = p[0]#random.randint(0,ft.width-1)
-            player_row = p[1]#random.randint(0,ft.height-1)
-
-            #player_col = random.randint(0,ft.width-1)
-            #player_row = random.randint(0,ft.height-1)
-            #win_col = random.randint(0,ft.width-1)
-            #win_row = random.randint(0,ft.height-1)
-    """
     if done:
         break
 
