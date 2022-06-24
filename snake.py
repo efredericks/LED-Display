@@ -20,6 +20,7 @@ cell = '.'
 end = '!'
 unvisited = ' '
 player = '@'
+attract = "A"
 WALKABLE = [cell, end]
 
 directions = [
@@ -35,6 +36,7 @@ maze_colors = {
   end: (255,0,0),
   unvisited: (20,20,20),
   player: (0,255,0),
+  attract: (0, 100, 0),
   fruit: (255, 255, 0),
 }
 
@@ -182,9 +184,12 @@ class Snake():
                 return i
         return -1
 
-    def show(self):
+    def show(self, attractMode):
         for i in xrange(0,len(self.body)):
-            self.ft.set(self.body[i][0], self.body[i][1], maze_colors[player])
+            if (attractMode):
+                self.ft.set(self.body[i][0], self.body[i][1], maze_colors[attract])
+            else:
+                self.ft.set(self.body[i][0], self.body[i][1], maze_colors[player])
 
 
 class SnakeGame():
@@ -325,7 +330,7 @@ class SnakeGame():
         ## initially draw
         self.drawMap()
         self.ft.send()
-        snake.show()
+        snake.show(self.attractMode)
 
         #fruitActive = True
         fruits.append(self.get_pos())#[random.randint(1,ft.width-2), random.randint(1, ft.height-2)]
@@ -345,6 +350,14 @@ class SnakeGame():
             # multiple key handler (irrespective of mode)
             if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
                 done = self.endGame()
+            # debounced single key presses
+            # --- DOESNT WORK WELL, can't seem to distinguish axes
+            #event = self.gamepad.read_one()
+            #if event is not None:
+            #    if event.code == ecodes.ABS_Y and event.value == 128: #up
+            #        self.currSand += 1
+            #        if self.currSand > 3:
+            #            self.currSand = 0
 
             # player control
             if not self.attractMode:
@@ -367,7 +380,7 @@ class SnakeGame():
             # eat fruit
             fruit_idx = snake.eat(fruits)
             snake.update()
-            snake.show()
+            snake.show(self.attractMode)
 
             # remove fruit from list if it was eaten
             if fruit_idx > -1:
