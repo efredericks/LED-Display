@@ -73,7 +73,7 @@ class Snake():
         head = self.get_head()
         min_dist = 9999
         target_idx = 0
-        for i in range(len(fruits)):
+        for i in xrange(len(fruits)):
             f = fruits[i]
             dist = abs(head[0] - f[0]) + abs(head[1] - f[1])
             if dist < min_dist:
@@ -160,7 +160,7 @@ class Snake():
             #return True
 
         # self collision
-        for i in range(0, len(self.body)-1):
+        for i in xrange(0, len(self.body)-1):
             if self.body[i][0] == x and self.body[i][1] == y:
                 retval = True
                 #return True
@@ -177,7 +177,7 @@ class Snake():
         #x = self.body[len(self.body)-1][0]
         #y = self.body[len(self.body)-1][1]
 
-        for i in range(len(_fruits)):
+        for i in xrange(len(_fruits)):
             if x == _fruits[i][0] and y == _fruits[i][1]:
                 #print(_fruits)
                 self.grow()
@@ -185,7 +185,7 @@ class Snake():
         return -1
 
     def show(self, attractMode):
-        for i in range(0,len(self.body)):
+        for i in xrange(0,len(self.body)):
             if (attractMode):
                 self.ft.set(self.body[i][0], self.body[i][1], maze_colors[attract])
             else:
@@ -233,22 +233,22 @@ class SnakeGame():
 
     # screen handlers
     def clearScreen(self, col=(0,0,0)):
-        for y in range(self.ft.height):
-            for x in range(self.ft.width):
+        for y in xrange(self.ft.height):
+            for x in xrange(self.ft.width):
                 self.ft.set(x,y,col)
 
     def drawMap(self):
-        for y in range(self.ft.height):
-            for x in range(self.ft.width):
+        for y in xrange(self.ft.height):
+            for x in xrange(self.ft.width):
                 self.ft.set(x, y, maze_colors[self.maze[y][x]])
 
 
     def generate_maze(self, num = None):
         maze = []
         # outer walls
-        for y in range(self.ft.height):
+        for y in xrange(self.ft.height):
             line = []
-            for x in range(self.ft.width):
+            for x in xrange(self.ft.width):
                 if x == 0 or y == 0 or y == self.ft.height-1 or x == self.ft.height-1:
                     line.append(wall)
                 else:
@@ -263,7 +263,7 @@ class SnakeGame():
         # cross
         if num == 1:
             y = 32
-            for x in range(10, self.ft.width-10):
+            for x in xrange(10, self.ft.width-10):
                 maze[y][x] = wall
                 maze[y-1][x] = wall
                 maze[y+1][x] = wall
@@ -276,8 +276,8 @@ class SnakeGame():
         # squares
         elif num == 2:
             offset = 4
-            for y in range(0,4):
-                for x in range(0,4):
+            for y in xrange(0,4):
+                for x in xrange(0,4):
                     maze[y+offset][x+offset] = wall
                     maze[self.ft.height-1-offset-y][x+offset] = wall
                     maze[self.ft.height-1-offset-y][self.ft.width-1-offset-x] = wall
@@ -340,7 +340,7 @@ class SnakeGame():
             self.drawMap()
 
             # keyboard events
-            for k,v in self.KEYCODES.items():
+            for k,v in self.KEYCODES.iteritems():
                 if v["key"] in keys:
                     if v["callback"] is not None:
                         r = v["callback"]()

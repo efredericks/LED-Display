@@ -5,9 +5,10 @@ import random
 import math
 from time import sleep
 from select import select
+import noise
 
 # game imports
-import sand, snake
+import sand, snake, tetris, roguelike
 
 gamepad = InputDevice('/dev/input/event0')
 
@@ -15,6 +16,10 @@ gamepad = InputDevice('/dev/input/event0')
 UDP_IP = 'localhost'
 UDP_PORT = 1337
 ft = flaschen.Flaschen(UDP_IP, UDP_PORT, 64, 64)
+
+# noise
+octaves = 8
+frequency = 16.0 * octaves
 
 # drawing colors
 COLORS = {
@@ -29,9 +34,11 @@ COLORS = {
 SNAKE = 0
 SAND = 1
 RUNNER = 2
-QUIT = 3
-indicator_pos = [[2,2], [2,9], [2,16], [2,23]]
-indicator = 0
+TETRIS = 3
+RL = 4
+QUIT = 5
+indicator_pos = [[2,2], [2,9], [2,16], [2,23], [2,30], [2,37]]
+indicator = 4
   
 # key handlers
 def startBtn():
@@ -43,6 +50,12 @@ def startBtn():
     elif indicator == SNAKE:
         snakeGame = snake.SnakeGame(ft, gamepad)
         snakeGame.execute()
+    elif indicator == TETRIS:
+        tetrisGame = tetris.TetrisGame(ft, gamepad)
+        tetrisGame.execute()
+    elif indicator == RL:
+        rlGame = roguelike.RLGame(ft, gamepad)
+        rlGame.execute()
 
 
     if indicator == len(indicator_pos)-1:
@@ -91,6 +104,20 @@ screen = [\
   "    P  P  PPP  P   P P   P PPPP P  P                            ",\
   "                                                                ",\
   "                                                                ",\
+  "    PPPPP PPPP PPPPP PPPP P  PPPP                               ",\
+  "      P   P      P   P  P P P                                   ",\
+  "      P   PPP    P   PPP  P  PPP                                ",\
+  "      P   P      P   P P  P     P                               ",\
+  "      P   PPPP   P   P  P P PPPP                                ",\
+  "                                                                ",\
+  "                                                                ",\
+  "    PPPP  PP   PPP  P   P PPPP P    P P  P PPPP                 ",\
+  "    P  P P  P P     P   P P    P    P P P  P                    ",\
+  "    PPP  P  P P  PP P   P PPP  P    P PP   PPP                  ",\
+  "    P P  P  P P   P P   P P    P    P P P  P                    ",\
+  "    P  P  PP   PPP   PPP  PPPP PPPP P P  P PPPP                 ",\
+  "                                                                ",\
+  "                                                                ",\
   "    PPPPP P   P P PPPPP                                         ",\
   "    P   P P   P P   P                                           ",\
   "    P P P P   P P   P                                           ",\
@@ -125,40 +152,46 @@ screen = [\
   "                                                                ",\
   "                                                                ",\
   "                                                                ",\
-  "                                                                ",\
-  "                                                                ",\
-  "                                                                ",\
-  "                                                                ",\
-  "                                                                ",\
-  "                                                                ",\
-  "                                                                ",\
 ]
 
 # screen handlers
-def drawScreen(ft, indicator, clear=False):
+def drawScreen(ft, indicator, z, clear=False):
     if not clear:
-        for y in xrange(0,ft.height):
-            for x in xrange(0,ft.width):
-                ft.set(x,y,COLORS[screen[y][x]])
+        for y in range(0,ft.height):
+            for x in range(0,ft.width):
+                if screen[y][x] == ' ':
+                    n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
+                    col = (0,0,0)
+                    if n < 0.25:
+                        col = (20,0,0)
+                    elif n < 0.5:
+                        col = (0,20,0)
+                    elif n < 0.75:
+                        col = (0,0,20)
+                    ft.set(x,y,col)
+                else:
+                    ft.set(x,y,COLORS[screen[y][x]])
 
-        for y in xrange(indicator_pos[indicator][1], indicator_pos[indicator][1]+5):
+        for y in range(indicator_pos[indicator][1], indicator_pos[indicator][1]+5):
             ft.set(indicator_pos[indicator][0], y, (0,255,0))
     else:
-        for y in xrange(0,ft.height):
-            for x in xrange(0,ft.width):
+        for y in range(0,ft.height):
+            for x in range(0,ft.width):
                 ft.set(x,y,COLORS[' '])
 
 if __name__ == "__main__":
-    drawScreen(ft, indicator)
+    z = 0
+    drawScreen(ft, indicator, z)
     ft.send()
+
 
     done = False
     while not done:
-        drawScreen(ft, indicator)
+        drawScreen(ft, indicator, z)
         keys = gamepad.active_keys()
 
         # keypad events
-        for k,v in KEYCODES.iteritems():
+        for k,v in KEYCODES.items():
             if v["key"] in keys:
                 r = v["callback"]()
                 if r == "done":
@@ -174,6 +207,9 @@ if __name__ == "__main__":
         if next_i > len(indicator_pos)-1: next_i = 0
 
         indicator = next_i
+        z += 1
+        if z > 5000:
+            z = 0
 
 
 
@@ -184,7 +220,7 @@ if __name__ == "__main__":
 
         sleep(0.10)
 
-    drawScreen(ft, indicator, True)
+    drawScreen(ft, indicator, z, True)
     ft.send()
     print("Done")
 

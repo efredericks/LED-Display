@@ -40,6 +40,8 @@ class FallingSand():
         self.isDraining = False
         self.gamemap = self.setupMap()
 
+        self.debounce_delay = 10/1000
+
         self.KEYCODES = {
           'L': {'key': 294, 'callback': self.drain},
           'R': {'key': 295,'callback': None},
@@ -48,8 +50,42 @@ class FallingSand():
           'X': {'key': 291,'callback': None},
           'Y': {'key': 292,'callback': None},
           'START':{'key': 299, 'callback': self.pauseGame},
-          'SELECT':{'key': 298, 'callback': self.setupMap},
+          'SELECT':{'key': 298, 'callback': self.newMap},
         }
+
+    # direction -> false is less than
+    def debounce_dpad(self):
+        # COULD MERGE WITH DEBOUNCE?
+
+        # horiz first, then vert
+        xval = self.gamepad.absinfo(ecodes.ABS_X).value
+        yval = self.gamepad.absinfo(ecodes.ABS_Y).value
+
+        sleep(self.debounce_delay)
+        xval2 = self.gamepad.absinfo(ecodes.ABS_X).value
+        yval2 = self.gamepad.absinfo(ecodes.ABS_Y).value
+
+        retval = {}
+        if xval < 128 and xval2 < 128:
+            retval['direction'] = 'x'
+            retval['value'] = False
+        elif xval > 128 and xval2 > 128:
+            retval['direction'] = 'x'
+            retval['value'] = True
+        elif yval < 128 and yval2 < 128:
+            retval['direction'] = 'y'
+            retval['value'] = False
+        elif yval > 128 and yval2 > 128:
+            retval['direction'] = 'y'
+            retval['value'] = True
+        else:
+            retval = None
+        return retval
+
+    def debounce(self):
+        keys = self.gamepad.active_keys()
+        sleep(self.debounce_delay)
+        return list(set(keys).intersection(self.gamepad.active_keys()))
 
     # pause game
     def pauseGame(self):
@@ -65,13 +101,16 @@ class FallingSand():
             json.dump(self.gamemap, f)
 
 
+    # trigger new map
+    def newMap(self):
+        self.gamemap = self.setupMap()
 
     # create an empty map
     def setupMap(self):
         gamemap = []
-        for y in xrange(self.ft.height):
+        for y in range(self.ft.height):
             line = []
-            for x in xrange(self.ft.width):
+            for x in range(self.ft.width):
                 line.append([EMPTY,maze_colors[EMPTY]])
             gamemap.append(line)
         return gamemap
@@ -82,13 +121,13 @@ class FallingSand():
 
     # screen handlers
     def clearScreen(self, col=(0,0,0)):
-        for y in xrange(self.ft.height):
-            for x in xrange(self.ft.width):
+        for y in range(self.ft.height):
+            for x in range(self.ft.width):
                 self.ft.set(x,y,col)
 
     def drawMap(self):
-        for y in xrange(self.ft.height):
-            for x in xrange(self.ft.width):
+        for y in range(self.ft.height):
+            for x in range(self.ft.width):
                 self.ft.set(x, y, self.gamemap[y][x][1])
 
     # drop sand from a column in the first row
@@ -139,7 +178,8 @@ class FallingSand():
         while not done:
             self.drawMap()
 
-            keys = self.gamepad.active_keys()
+            #keys = self.gamepad.active_keys()
+            keys = self.debounce()
 
             # draw emitter
             if self.currSand == 0: self.emitterColor = SAND
@@ -151,7 +191,7 @@ class FallingSand():
 
 
             # keyboard events
-            for k,v in self.KEYCODES.iteritems():
+            for k,v in self.KEYCODES.items():
                 if v["key"] in keys:
                     if v["callback"] is not None:
                         r = v["callback"]()
@@ -160,12 +200,12 @@ class FallingSand():
 
             # debounced single key presses
             # --- DOESNT WORK WELL, can't seem to distinguish axes
-            event = self.gamepad.read_one()
-            if event is not None:
-                if event.code == ecodes.ABS_Y and event.value == 128: #up
-                    self.currSand += 1
-                    if self.currSand > 3:
-                        self.currSand = 0
+            #event = self.gamepad.read_one()
+            #if event is not None:
+            #    if event.code == ecodes.ABS_Y and event.value == 128: #up
+            #        self.currSand += 1
+            #        if self.currSand > 3:
+            #            self.currSand = 0
 
             # multiple key handler (irrespective of mode)
             if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
@@ -177,15 +217,28 @@ class FallingSand():
             #    self.saveMap()
 
             # dpad events
-            if self.gamepad.absinfo(ecodes.ABS_X).value < 128:
-                self.currCol -= 1
-            if self.gamepad.absinfo(ecodes.ABS_X).value > 128:
-                self.currCol += 1
+            dpad = self.debounce_dpad()
+            if dpad is not None:
+                if dpad['direction'] == 'x':
+                    if dpad['value']:
+                        self.currCol += 1
+                    else:
+                        self.currCol -= 1
+                else:
+                    self.currSand += 1
+                    if self.currSand > 3:
+                        self.currSand = 0
+#            if self.gamepad.absinfo(ecodes.ABS_X).value < 128:
+#                self.currCol -= 1
+#            if self.gamepad.absinfo(ecodes.ABS_X).value > 128:
+#                self.currCol += 1
+#
+#            if self.gamepad.absinfo(ecodes.ABS_Y).value < 128:
+#                self.currSand += 1
+#                if self.currSand > 3:
+#                    self.currSand = 0
 
-            #if self.gamepad.absinfo(ecodes.ABS_Y).value < 128:
-            #    self.currSand += 1
-            #    if self.currSand > 3:
-            #        self.currSand = 0
+
             #if self.gamepad.absinfo(ecodes.ABS_Y).value > 128:
             #    pass
 
@@ -193,8 +246,8 @@ class FallingSand():
             if self.currCol > self.ft.width-1: self.currCol = self.ft.width-1
 
             # sand updates
-            for y in xrange(self.ft.height-1, -1, -1):
-                for x in xrange(self.ft.width):
+            for y in range(self.ft.height-1, -1, -1):
+                for x in range(self.ft.width):
                     direction = random.choice([-1, 1])
                     if self.gamemap[y][x][0] == SAND:
                         if self.getCell(x, y+1) is not None and \
@@ -212,7 +265,7 @@ class FallingSand():
 
 
             if self.isDraining:
-                for i in xrange(self.ft.width):
+                for i in range(self.ft.width):
                     self.gamemap[self.ft.height-1][i] = [EMPTY,maze_colors[EMPTY]]
 
 
