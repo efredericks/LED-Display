@@ -47,7 +47,7 @@ class RLGame():
     def __init__(self, ft, gamepad):
         self.ft = ft
         self.gamepad = gamepad
-        self.player = Player(3, 3)
+        self.player = Player(int(MAP_COLS/2), int(MAP_ROWS/2))#3, 3)
         self.entities = []
         self.debounce_delay = 10/1000
 
@@ -72,15 +72,34 @@ class RLGame():
         return list(set(keys).intersection(self.gamepad.active_keys()))
 
     def generateMap(self):
-        game_map = [[floor]*MAP_COLS for _ in range(MAP_ROWS)]
+        game_map = [[wall]*MAP_COLS for _ in range(MAP_ROWS)]
 
+        # random walk
+        center_c = int(MAP_COLS / 2)
+        center_r = int(MAP_ROWS / 2)
+        for _ in range(50): # iterations
+            curr_c = center_c
+            curr_r = center_r
+            for _ in range(500): # life
+                d = random.choice(directions)
+                next_c = curr_c + d[0]
+                next_r = curr_r + d[1]
+                if next_c > 0 and next_c < len(game_map[0])-2 and \
+                   next_r > 0 and next_r < len(game_map)-2:
+                    game_map[next_r][next_c] = random.choice(DIRT)
+                    curr_c = next_c
+                    curr_r = next_c
+
+
+        # ensure walled edges
         for r in range(MAP_ROWS):
             for c in range(MAP_COLS):
                 if r == 0 or c == 0 or r == MAP_ROWS-1 or c == MAP_COLS-1:
                     game_map[r][c] = wall
-                else:
-                    if (random.random() > 0.7):
-                        game_map[r][c] = random.choice(DIRT)
+                #else:
+                #    if (random.random() > 0.7):
+                #        game_map[r][c] = random.choice(DIRT)
+
 
         return game_map
 

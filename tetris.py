@@ -276,13 +276,13 @@ class TetrisGame():
 
     # screen handlers
     def clearScreen(self, col=(0,0,0)):
-        for y in xrange(self.ft.height):
-            for x in xrange(self.ft.width):
+        for y in range(self.ft.height):
+            for x in range(self.ft.width):
                 self.ft.set(x,y,col)
 
     def drawBaseScreen(self):
-        for y in xrange(self.ft.height):
-            for x in xrange(self.ft.width):
+        for y in range(self.ft.height):
+            for x in range(self.ft.width):
                 self.ft.set(x, y, maze_colors[screen[y][x]])
 
     def drawMap(self):
@@ -306,7 +306,7 @@ class TetrisGame():
             self.drawMap()
 
             # keyboard events
-            for k,v in self.KEYCODES.iteritems():
+            for k,v in self.KEYCODES.items():
                 if v["key"] in keys:
                     if v["callback"] is not None:
                         r = v["callback"]()

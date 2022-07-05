@@ -2,13 +2,14 @@ from evdev import InputDevice, categorize, ecodes
 from copy import deepcopy
 import flaschen
 import random
+from datetime import datetime
 import math
 from time import sleep
 from select import select
 import noise
 
 # game imports
-import sand, snake, tetris, roguelike
+import sand, snake, tetris, roguelike, runner
 
 gamepad = InputDevice('/dev/input/event0')
 
@@ -38,7 +39,7 @@ TETRIS = 3
 RL = 4
 QUIT = 5
 indicator_pos = [[2,2], [2,9], [2,16], [2,23], [2,30], [2,37]]
-indicator = 4
+indicator = 2#4
   
 # key handlers
 def startBtn():
@@ -50,6 +51,9 @@ def startBtn():
     elif indicator == SNAKE:
         snakeGame = snake.SnakeGame(ft, gamepad)
         snakeGame.execute()
+    elif indicator == RUNNER:
+        runnerGame = runner.RunnerGame(ft, gamepad)
+        runnerGame.execute()
     elif indicator == TETRIS:
         tetrisGame = tetris.TetrisGame(ft, gamepad)
         tetrisGame.execute()
@@ -99,7 +103,7 @@ screen = [\
   "                                                                ",\
   "    PPPP P   P P   P P   P PPPP PPPP                            ",\
   "    P  P P   P PP  P PP  P P    P  P                            ",\
-  "   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR                           ",\
+  "    PPP  P   P P P P P P P PPP  PPP                             ",\
   "    P P  P   P P  PP P  PP P    P P                             ",\
   "    P  P  PPP  P   P P   P PPPP P  P                            ",\
   "                                                                ",\
@@ -180,6 +184,7 @@ def drawScreen(ft, indicator, z, clear=False):
                 ft.set(x,y,COLORS[' '])
 
 if __name__ == "__main__":
+    random.seed(datetime.now())
     z = 0
     drawScreen(ft, indicator, z)
     ft.send()

@@ -128,3 +128,9 @@ SPRITES = {
     "........",
   ],
 }
+
+## functions
+
+#https://stackoverflow.com/questions/44338698/p5-js-map-function-in-python
+def p5Map(n, start1, stop1, start2, stop2):
+  return ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2
