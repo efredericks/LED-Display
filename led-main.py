@@ -39,7 +39,7 @@ TETRIS = 3
 RL = 4
 QUIT = 5
 indicator_pos = [[2,2], [2,9], [2,16], [2,23], [2,30], [2,37]]
-indicator = 2#4
+indicator = 4
   
 # key handlers
 def startBtn():

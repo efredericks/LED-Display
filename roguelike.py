@@ -6,6 +6,7 @@ import math
 from time import sleep
 from select import select
 from roguelike_sprites import *
+from roguelike_map_gen import *
 
 directions = [
   [0,-1],
@@ -252,6 +253,7 @@ class RLGame():
 
             if self.isValid(next_c, next_r):
                 enemyThere = False
+                deadEntity = False
                 for e in self.entities:
                     if next_c == e.c and next_r == e.r:
                         enemyThere = True
@@ -259,8 +261,10 @@ class RLGame():
                         if e.hp < 0: 
                             e.hp = 0
                             e.sprite = dead
+                            deadEntity = True
 
-                if not enemyThere:
+                # blank spot or there is a corpse but it is dead
+                if not enemyThere or (enemyThere and deadEntity):
                     self.player.c = next_c
                     self.player.r = next_r
 

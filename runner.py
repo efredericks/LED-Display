@@ -184,7 +184,6 @@ class RunnerGame():
                    self.pixels[self.player['y'],self.player['x']+1][1] == 0 and \
                    self.pixels[self.player['y'],self.player['x']+1][2] == 255: 
                     done = True
-                    self.colorScreen((255,0,0))
 
 
             if self.jumpTimer > 0:
@@ -233,6 +232,7 @@ class RunnerGame():
             sleep(0.10)
 
         #self.clearScreen()
+        self.colorScreen((255,0,0))
         self.ft.send()
         print("Done")
         sleep(2)

@@ -10,7 +10,7 @@ floor = "."
 clear = ' '
 dead = '%'
 
-WALKABLE = [floor, dirt1, dirt2, dirt3]
+WALKABLE = [floor, dirt1, dirt2, dirt3, dead]
 DIRT = [dirt1, dirt2, dirt3]
 ENTITY_SPRITES = [player, orc]
 
