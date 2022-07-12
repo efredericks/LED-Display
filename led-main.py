@@ -1,22 +1,32 @@
 from evdev import InputDevice, categorize, ecodes
 from copy import deepcopy
-import flaschen
 import random
 from datetime import datetime
 import math
 from time import sleep
 from select import select
 import noise
+import argparse
+import numpy as np
 
 # game imports
+import flaschen
+from helpers import *
 import sand, snake, tetris, roguelike, runner
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--input_type", default="keyboard", help="keyboard|controller (default keyboard")
+parser.add_argument("--IP", default="localhost", help="IP address of display (default localhost)")
+parser.add_argument("--port", default=1337, help="Port of display (default 1337)")
+args = parser.parse_args()
 
 gamepad = InputDevice('/dev/input/event0')
 
-# setup flaschen-taschen connection (i.e., the reason Py2.7 is used)
-UDP_IP = 'localhost'
-UDP_PORT = 1337
+# setup flaschen-taschen connection 
+UDP_IP = args.IP#'localhost'
+UDP_PORT = args.port#1337
 ft = flaschen.Flaschen(UDP_IP, UDP_PORT, 64, 64)
+pixels = np.asarray(ft)
 
 # noise
 octaves = 8
@@ -61,7 +71,6 @@ def startBtn():
         rlGame = roguelike.RLGame(ft, gamepad)
         rlGame.execute()
 
-
     if indicator == len(indicator_pos)-1:
         return "done"
     else:
@@ -80,10 +89,7 @@ KEYCODES = {
   'SELECT':{'key': 298, 'callback': endGame},
 }
 
-# option 1 - snake
-# option 2 - sand
-# option 3 - done
-# start empty
+# manually drawing screen ._.
 screen = [\
   "                                                                ",\
   "                                                                ",\
@@ -158,30 +164,52 @@ screen = [\
   "                                                                ",\
 ]
 
+letter_indices = {}
+for y in range(len(screen)):
+    for x in range(len(screen[0])):
+        if screen[y][x] != " ":
+            letter_indices["{0}.{1}".format(y,x)] = True
+            pixels[y,x] = COLORS['P']#(255,0,255)
+
 # screen handlers
 def drawScreen(ft, indicator, z, clear=False):
-    if not clear:
-        for y in range(0,ft.height):
-            for x in range(0,ft.width):
-                if screen[y][x] == ' ':
-                    n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
-                    col = (0,0,0)
-                    if n < 0.25:
-                        col = (20,0,0)
-                    elif n < 0.5:
-                        col = (0,20,0)
-                    elif n < 0.75:
-                        col = (0,0,20)
-                    ft.set(x,y,col)
-                else:
-                    ft.set(x,y,COLORS[screen[y][x]])
+    for y in range(0,ft.height):
+        for x in range(0,ft.width):
+            if "{0}.{1}".format(y,x) not in letter_indices.keys():
+                n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
+                col = (0,0,0)
+                if n < 0.25:
+                   col = (255,0,0)
+                elif n < 0.5:
+                   col = (0,255,0)
+                elif n < 0.75:
+                   col = (0,0,255)
+                pixels[y,x] = col
+              
 
-        for y in range(indicator_pos[indicator][1], indicator_pos[indicator][1]+5):
-            ft.set(indicator_pos[indicator][0], y, (0,255,0))
-    else:
-        for y in range(0,ft.height):
-            for x in range(0,ft.width):
-                ft.set(x,y,COLORS[' '])
+
+#    if not clear:
+#        for y in range(0,ft.height):
+#            for x in range(0,ft.width):
+#                if screen[y][x] == ' ':
+#                    n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
+#                    col = (0,0,0)
+#                    if n < 0.25:
+#                        col = (20,0,0)
+#                    elif n < 0.5:
+#                        col = (0,20,0)
+#                    elif n < 0.75:
+#                        col = (0,0,20)
+#                    ft.set(x,y,col)
+#                else:
+#                    ft.set(x,y,COLORS[screen[y][x]])
+#
+#        for y in range(indicator_pos[indicator][1], indicator_pos[indicator][1]+5):
+#            ft.set(indicator_pos[indicator][0], y, (0,255,0))
+#    else:
+#        for y in range(0,ft.height):
+#            for x in range(0,ft.width):
+#                ft.set(x,y,COLORS[' '])
 
 if __name__ == "__main__":
     random.seed(datetime.now())
@@ -216,16 +244,14 @@ if __name__ == "__main__":
         if z > 5000:
             z = 0
 
-
-
         ft.send()
+
         # reset game
         if done:
             break
 
-        sleep(0.10)
+        sleep(0.010)
 
     drawScreen(ft, indicator, z, True)
     ft.send()
     print("Done")
-

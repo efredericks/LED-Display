@@ -22,11 +22,11 @@ while True:
       n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
       col = (0,0,0)
       if n < 0.25:
-        col = (20,0,0)
+        col = (255,0,0)
       elif n < 0.5:
-        col = (0,20,0)
+        col = (0,255,0)
       elif n < 0.75:
-        col = (0,0,20)
+        col = (0,0,255)
       pixels[y,x] = col
   ft.send()
   z += 1
