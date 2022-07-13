@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input_type", default="keyboard", help="keyboard|controller (default keyboard")
 parser.add_argument("--IP", default="localhost", help="IP address of display (default localhost)")
 parser.add_argument("--port", default=1337, help="Port of display (default 1337)")
+parser.add_argument("--display", default="LED", help="LED|monitor (default LED)")
 args = parser.parse_args()
 
 gamepad = InputDevice('/dev/input/event0')
@@ -68,7 +69,7 @@ def startBtn():
         tetrisGame = tetris.TetrisGame(ft, gamepad)
         tetrisGame.execute()
     elif indicator == RL:
-        rlGame = roguelike.RLGame(ft, gamepad)
+        rlGame = roguelike.RLGame(ft, gamepad, pixels)
         rlGame.execute()
 
     if indicator == len(indicator_pos)-1:
@@ -165,26 +166,41 @@ screen = [\
 ]
 
 letter_indices = {}
-for y in range(len(screen)):
-    for x in range(len(screen[0])):
-        if screen[y][x] != " ":
-            letter_indices["{0}.{1}".format(y,x)] = True
-            pixels[y,x] = COLORS['P']#(255,0,255)
+def drawText():
+    for y in range(len(screen)):
+        for x in range(len(screen[0])):
+            if screen[y][x] != " ":
+                letter_indices["{0}.{1}".format(y,x)] = True
+                pixels[y,x] = COLORS['P']#(255,0,255)
 
 # screen handlers
 def drawScreen(ft, indicator, z, clear=False):
-    for y in range(0,ft.height):
-        for x in range(0,ft.width):
-            if "{0}.{1}".format(y,x) not in letter_indices.keys():
-                n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
-                col = (0,0,0)
-                if n < 0.25:
-                   col = (255,0,0)
-                elif n < 0.5:
-                   col = (0,255,0)
-                elif n < 0.75:
-                   col = (0,0,255)
-                pixels[y,x] = col
+    if not clear:
+        for y in range(0,ft.height):
+            for x in range(0,ft.width):
+                if "{0}.{1}".format(y,x) not in letter_indices.keys():
+                    n = noise.snoise3(x / frequency, y/frequency, z/frequency, octaves=octaves,persistence=0.25)
+                    col = (0,0,0)
+                    # too bright on an LED - could tone down with the brightness i'm sure
+                    # but this is quicker for now
+                    if args.display == "LED":
+                        brightness = 20
+                    else:
+                        brightness = 255
+
+                    if n < 0.25:
+                        col = (brightness,0,0)
+                    elif n < 0.5:
+                        col = (0,brightness,0)
+                    elif n < 0.75:
+                        col = (0,0,brightness)
+
+                    pixels[y,x] = col
+        for y in range(indicator_pos[indicator][1], indicator_pos[indicator][1]+5):
+            pixels[y,indicator_pos[indicator][0]] = (0,255,0)
+
+    else: # clear because we're done
+        pixels[:,:] = (0,0,0)
               
 
 
@@ -214,6 +230,7 @@ def drawScreen(ft, indicator, z, clear=False):
 if __name__ == "__main__":
     random.seed(datetime.now())
     z = 0
+    drawText()
     drawScreen(ft, indicator, z)
     ft.send()
 
@@ -227,6 +244,9 @@ if __name__ == "__main__":
         for k,v in KEYCODES.items():
             if v["key"] in keys:
                 r = v["callback"]()
+
+                # reset pixels array when done
+                drawText()
                 if r == "done":
                     done = True
 

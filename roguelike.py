@@ -45,9 +45,11 @@ class Player(MoveableEntity):
 
 
 class RLGame():
-    def __init__(self, ft, gamepad):
+    def __init__(self, ft, gamepad, pixels):
         self.ft = ft
         self.gamepad = gamepad
+        self.pixels = pixels
+
         self.player = Player(int(MAP_COLS/2), int(MAP_ROWS/2))#3, 3)
         self.entities = []
         self.debounce_delay = 10/1000
@@ -64,6 +66,7 @@ class RLGame():
         }
 
         self.game_map = self.generateMap()
+
         for _ in range(ENEMIES_PER_CHUNK):
             self.entities.append(MoveableEntity(orc, random.randint(1,MAP_COLS-2), random.randint(1,MAP_ROWS-2)))
 
