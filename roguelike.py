@@ -50,9 +50,19 @@ class RLGame():
         self.gamepad = gamepad
         self.pixels = pixels
 
-        self.player = Player(int(MAP_COLS/2), int(MAP_ROWS/2))#3, 3)
-        self.entities = []
         self.debounce_delay = 10/1000
+
+        #self.game_map = self.generateMap()
+        self.mapGen = MapGenerator(width=MAP_COLS, height=MAP_ROWS)
+        self.game_map, p_c, p_r = self.mapGen.generateBSP()
+        print(self.game_map)
+        #p_c, p_r = self.getValidPos()
+        self.player = Player(p_c,p_r)#int(MAP_COLS/2), int(MAP_ROWS/2))#3, 3)
+
+        self.entities = []
+        for _ in range(ENEMIES_PER_CHUNK):
+            e_c, e_r = self.getValidPos()
+            self.entities.append(MoveableEntity(orc, e_c, e_r))
 
         self.KEYCODES = {
           'L': {'key': 294,'callback': self.player.update(ACTIONS.WAIT)},
@@ -65,16 +75,13 @@ class RLGame():
           'SELECT':{'key': 298, 'callback': None},
         }
 
-        self.game_map = self.generateMap()
-
-        for _ in range(ENEMIES_PER_CHUNK):
-            self.entities.append(MoveableEntity(orc, random.randint(1,MAP_COLS-2), random.randint(1,MAP_ROWS-2)))
 
     def debounce(self):
         keys = self.gamepad.active_keys()
         sleep(self.debounce_delay)
         return list(set(keys).intersection(self.gamepad.active_keys()))
 
+    """
     def generateMap(self):
         game_map = [[wall]*MAP_COLS for _ in range(MAP_ROWS)]
 
@@ -106,6 +113,15 @@ class RLGame():
 
 
         return game_map
+    """
+
+    def getValidPos(self):
+        r = random.randint(1,MAP_ROWS-1)
+        c = random.randint(1,MAP_COLS-1)
+        while not self.isValid(c, r):
+            r = random.randint(1,MAP_ROWS-1)
+            c = random.randint(1,MAP_COLS-1)
+        return c,r
 
     def isValid(self, c, r):
         if c < 0 or c > len(self.game_map[0])-1 or r < 0 or r > len(self.game_map)-1:
@@ -223,53 +239,54 @@ class RLGame():
                 dirty = False
 
             #keys = self.gamepad.active_keys()
-            keys = self.debounce()
+            if self.gamepad is not None:
+                keys = self.debounce()
 
-            # keyboard events
-            for k,v in self.KEYCODES.items():
-                if v["key"] in keys:
+                # keyboard events
+                for k,v in self.KEYCODES.items():
+                    if v["key"] in keys:
+                        dirty = True
+                        if v["callback"] is not None:
+                            r = v["callback"]()
+                            if r == "done":
+                                done = True
+
+                # multiple key handler (irrespective of mode)
+                if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
+                    done = True
+
+                # dpad events
+                next_r = self.player.r
+                next_c = self.player.c
+                if self.gamepad.absinfo(ecodes.ABS_X).value < 128:
                     dirty = True
-                    if v["callback"] is not None:
-                        r = v["callback"]()
-                        if r == "done":
-                            done = True
+                    next_c -= 1
+                if self.gamepad.absinfo(ecodes.ABS_X).value > 128:
+                    dirty = True
+                    next_c += 1
+                if self.gamepad.absinfo(ecodes.ABS_Y).value < 128:
+                    dirty = True
+                    next_r -= 1
+                if self.gamepad.absinfo(ecodes.ABS_Y).value > 128:
+                    dirty = True
+                    next_r += 1
 
-            # multiple key handler (irrespective of mode)
-            if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
-                done = True
+                if self.isValid(next_c, next_r):
+                    enemyThere = False
+                    deadEntity = False
+                    for e in self.entities:
+                        if next_c == e.c and next_r == e.r:
+                            enemyThere = True
+                            e.hp -= 1
+                            if e.hp < 0: 
+                                e.hp = 0
+                                e.sprite = dead
+                                deadEntity = True
 
-            # dpad events
-            next_r = self.player.r
-            next_c = self.player.c
-            if self.gamepad.absinfo(ecodes.ABS_X).value < 128:
-                dirty = True
-                next_c -= 1
-            if self.gamepad.absinfo(ecodes.ABS_X).value > 128:
-                dirty = True
-                next_c += 1
-            if self.gamepad.absinfo(ecodes.ABS_Y).value < 128:
-                dirty = True
-                next_r -= 1
-            if self.gamepad.absinfo(ecodes.ABS_Y).value > 128:
-                dirty = True
-                next_r += 1
-
-            if self.isValid(next_c, next_r):
-                enemyThere = False
-                deadEntity = False
-                for e in self.entities:
-                    if next_c == e.c and next_r == e.r:
-                        enemyThere = True
-                        e.hp -= 1
-                        if e.hp < 0: 
-                            e.hp = 0
-                            e.sprite = dead
-                            deadEntity = True
-
-                # blank spot or there is a corpse but it is dead
-                if not enemyThere or (enemyThere and deadEntity):
-                    self.player.c = next_c
-                    self.player.r = next_r
+                    # blank spot or there is a corpse but it is dead
+                    if not enemyThere or (enemyThere and deadEntity):
+                        self.player.c = next_c
+                        self.player.r = next_r
 
 
 
