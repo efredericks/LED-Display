@@ -47,7 +47,11 @@ class Player(MoveableEntity):
         if which == ACTIONS.WAIT:
             self.hp += 1
             if (self.hp >= self.maxHP): self.hp = self.maxHP
+        return ""
 
+
+def cb():
+    print("WHOA NELLY")
 
 class RLGame():
     def __init__(self, ft, gamepad, pixels):
@@ -67,10 +71,10 @@ class RLGame():
         self.entities = []
         for _ in range(ENEMIES_PER_CHUNK):
             e_c, e_r = self.getValidPos()
-            self.entities.append(MoveableEntity(orc, e_c, e_r, hp=3, atk=2))
+            self.entities.append(MoveableEntity(orc, e_c, e_r, hp=3, atk=1))
 
         self.KEYCODES = {
-          'L': {'key': 294,'callback': self.player.update(ACTIONS.WAIT)},
+          'L': {'key': 294,'callback': self.player.update, 'param': (ACTIONS.WAIT)},
           'R': {'key': 295,'callback': None},
           'A': {'key': 288,'callback': None},
           'B': {'key': 289,'callback': None},
@@ -280,7 +284,12 @@ class RLGame():
                     if v["key"] in keys:
                         dirty = True
                         if v["callback"] is not None:
-                            r = v["callback"]()
+
+                            if 'param' in v.keys():
+                                r = v["callback"](v["param"])
+                            else:
+                                r = v["callback"]()
+
                             if r == "done":
                                 done = True
 
