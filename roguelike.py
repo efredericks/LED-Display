@@ -27,7 +27,7 @@ class MoveableEntity():
         self.hp = hp
         self.maxHP = hp
         self.atk = atk
-        self.cooldown = 1
+        self.cooldown = 2
 
     # only update non-player entities (for now)
     def update(self, neighbors):
@@ -35,7 +35,7 @@ class MoveableEntity():
             if neighbors['isPlayer']: # player is adjacent - don't care which direction at the moment TBD
                 self.cooldown -= 1
                 if self.cooldown == 0:
-                    self.cooldown = 1
+                    self.cooldown = 2
                     return {'c': None, 'r': None, 'attack': self.atk}
                 else:
                     return {'c': None, 'r': None, 'attack': None}
@@ -328,9 +328,11 @@ class RLGame():
                                     self.player.sprite = dead
                                     done = True
 
-                            elif self.isValid(action['c'], action['r']): # otherwise move
-                                e.c = action['c']
-                                e.r = action['r']
+                            elif action['c'] is not None and action['r'] is not None:
+                                if self.isValid(action['c'], action['r']): # otherwise move
+                                    e.c = action['c']
+                                    e.r = action['r']
+
             
                 self.drawMap()
                 #self.drawCell(self.player['c'], self.player['r'], player)
