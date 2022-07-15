@@ -253,28 +253,6 @@ class RLGame():
                 dirty = True
                 # sleep(0.5)
 
-            if dirty:
-                for e in self.entities:
-                    if e.sprite is not dead:
-                        neighbors = self.getNeighbors(e)
-                        action = e.update(neighbors)
-                        if action is not None:
-                            if action['attack'] is not None: # prefer attack
-                                self.player.hp -= action['attack']
-                                if self.player.hp <= 0:
-                                    self.player.hp = 0
-                                    self.player.sprite = dead
-                                    done = True
-
-                            elif self.isValid(action['c'], action['r']): # otherwise move
-                                e.c = action['c']
-                                e.r = action['r']
-            
-                self.drawMap()
-                #self.drawCell(self.player['c'], self.player['r'], player)
-                self.ft.send()
-                dirty = False
-
             #keys = self.gamepad.active_keys()
             if self.gamepad is not None:
                 keys = self.debounce()
@@ -329,6 +307,29 @@ class RLGame():
                     if not enemyThere or (enemyThere and deadEntity):
                         self.player.c = next_c
                         self.player.r = next_r
+
+
+            if dirty:
+                for e in self.entities:
+                    if e.sprite is not dead:
+                        neighbors = self.getNeighbors(e)
+                        action = e.update(neighbors)
+                        if action is not None:
+                            if action['attack'] is not None: # prefer attack
+                                self.player.hp -= action['attack']
+                                if self.player.hp <= 0:
+                                    self.player.hp = 0
+                                    self.player.sprite = dead
+                                    done = True
+
+                            elif self.isValid(action['c'], action['r']): # otherwise move
+                                e.c = action['c']
+                                e.r = action['r']
+            
+                self.drawMap()
+                #self.drawCell(self.player['c'], self.player['r'], player)
+                self.ft.send()
+                dirty = False
 
 
 
