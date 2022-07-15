@@ -20,19 +20,23 @@ directions = [
 ]
 
 class MoveableEntity():
-    def __init__(self, sprite, c, r, hp=5):
+    def __init__(self, sprite, c, r, hp=5, atk=1):
         self.sprite = sprite
         self.c = c
         self.r = r
         self.hp = hp
         self.maxHP = hp
+        self.atk = atk
 
     # only update non-player entities (for now)
-    def update(self):
+    def update(self, neighbors):
         if self.sprite is not player:
-            if random.random() > 0.8:
-                d = random.choice(directions)
-                return {'c': self.c + d[0], 'r': self.r + d[1]}
+            if neighbors['isPlayer']: # player is adjacent - don't care which direction at the moment TBD
+                return {'c': None, 'r': None, 'attack': self.atk}
+            else:
+                if random.random() > 0.8:
+                    next_pos = random.choice(neighbors['positions'])
+                    return {'c': next_pos['c'], 'r': next_pos['r'], 'attack':None}
         return None
 
 class Player(MoveableEntity):
@@ -62,7 +66,7 @@ class RLGame():
         self.entities = []
         for _ in range(ENEMIES_PER_CHUNK):
             e_c, e_r = self.getValidPos()
-            self.entities.append(MoveableEntity(orc, e_c, e_r))
+            self.entities.append(MoveableEntity(orc, e_c, e_r, hp=3, atk=2))
 
         self.KEYCODES = {
           'L': {'key': 294,'callback': self.player.update(ACTIONS.WAIT)},
@@ -216,6 +220,20 @@ class RLGame():
         #    for x in xrange(self.ft.width):
                 #self.ft.set(x, y, COLORS[self.maze[y][x]])
 
+    def getNeighbors(self, e):
+        valid_positions = []
+        isPlayer = False
+        for d in directions:
+            next_c = e.c + d[0]
+            next_r = e.r + d[1]
+
+            if self.isValid(next_c, next_r):
+                if self.player.c == next_c and self.player.r == next_r:
+                    isPlayer = True
+                valid_positions.append({'c':next_c, 'r': next_r, 'isPlayer': isPlayer})
+        return {'positions': valid_positions, 'isPlayer': isPlayer}
+
+
 
     def execute(self):
         print("Running Roguelike game.")
@@ -225,13 +243,27 @@ class RLGame():
         done = False 
         dirty = True
         while not done:
+            # headless play
+            if self.gamepad is None:
+                dirty = True
+                # sleep(0.5)
+
             if dirty:
                 for e in self.entities:
                     if e.sprite is not dead:
-                        new_pos = e.update()
-                        if new_pos is not None and self.isValid(new_pos['c'], new_pos['r']):
-                            e.c = new_pos['c']
-                            e.r = new_pos['r']
+                        neighbors = self.getNeighbors(e)
+                        action = e.update(neighbors)
+                        if action is not None:
+                            if action['attack'] is not None: # prefer attack
+                                self.player.hp -= action['attack']
+                                if self.player.hp <= 0:
+                                    self.player.hp = 0
+                                    self.player.sprite = dead
+                                    done = True
+
+                            elif self.isValid(action['c'], action['r']): # otherwise move
+                                e.c = action['c']
+                                e.r = action['r']
             
                 self.drawMap()
                 #self.drawCell(self.player['c'], self.player['r'], player)
