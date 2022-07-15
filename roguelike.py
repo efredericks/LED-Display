@@ -45,7 +45,8 @@ class Player(MoveableEntity):
 
     def update(self, which):
         if which == ACTIONS.WAIT:
-            print("waiting")
+            self.hp += 1
+            if (self.hp >= self.maxHP): self.hp = self.maxHP
 
 
 class RLGame():
