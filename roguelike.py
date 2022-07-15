@@ -27,12 +27,18 @@ class MoveableEntity():
         self.hp = hp
         self.maxHP = hp
         self.atk = atk
+        self.cooldown = 1
 
     # only update non-player entities (for now)
     def update(self, neighbors):
         if self.sprite is not player:
             if neighbors['isPlayer']: # player is adjacent - don't care which direction at the moment TBD
-                return {'c': None, 'r': None, 'attack': self.atk}
+                self.cooldown -= 1
+                if self.cooldown == 0:
+                    self.cooldown = 1
+                    return {'c': None, 'r': None, 'attack': self.atk}
+                else:
+                    return {'c': None, 'r': None, 'attack': None}
             else:
                 if random.random() > 0.8:
                     next_pos = random.choice(neighbors['positions'])
