@@ -32,6 +32,12 @@ class RectangularRoom:
   def inner(self) -> Tuple[slice, slice]:
     return slice(self.x1 + 1, self.x2), slice(self.y1 + 1, self.y2)
 
+  @property
+  def randomPos(self) -> Tuple[int, int]:
+      c = random.randint(self.x1+1, self.x2-1)
+      r = random.randint(self.y1+1, self.y2-1)
+      return c, r
+
 def tunnel_between(
   start: Tuple[int,int], end: Tuple[int,int]
 ) -> Iterator[Tuple[int, int]]:
@@ -71,11 +77,17 @@ class MapGenerator:
 
   def generateBSP(self):
     gameMap = self.initMap()
+    exitPlaced = False
+
+    retobj = {}
 
     rooms: List[RectangularRoom] = []
 
     player_start_x: int = 0
     player_start_y: int = 0
+
+    exit_x: int = 0
+    exit_y: int = 0
 
     # generate rooms
     for r in range(self.max_rooms):
@@ -94,10 +106,11 @@ class MapGenerator:
 
       if len(rooms) == 0:
         player_start_x, player_start_y = new_room.center
-
       else:
         for x, y in tunnel_between(rooms[-1].center, new_room.center):
           gameMap[y,x] = floor
+
+
       rooms.append(new_room)
 
 
@@ -110,5 +123,16 @@ class MapGenerator:
     #for x, y in tunnel_between(room_2.center, room_1.center):
     #  gameMap[y, x] = floor
 
-    return gameMap, player_start_x, player_start_y
+    # return the *singular* exit (for now)
+    if not exitPlaced:
+        exitPlaced = True
+        exit_x, exit_y = new_room.randomPos
+        gameMap[exit_y,exit_x] = exit
+        print(exit_x, exit_y)
+
+    retobj['map'] = gameMap
+    retobj['player_start'] = {'r': player_start_y, 'c': player_start_x}
+    retobj['exit'] = {'r': exit_y, 'c': exit_x}
+
+    return retobj#gameMap, player_start_x, player_start_y
 

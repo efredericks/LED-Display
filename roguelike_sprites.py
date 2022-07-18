@@ -1,5 +1,10 @@
 from enum import Enum
 
+## DEFINING A SPRITE
+# 1) give it a 'tile' (char)
+# 2) give it a color
+# 3) create the sprite (8x8)
+
 player = "@"
 orc = "o"
 dirt1 = 'd1'
@@ -9,8 +14,9 @@ wall = "#"
 floor = "."
 clear = ' '
 dead = '%'
+exit = 'e'
 
-WALKABLE = [floor, dirt1, dirt2, dirt3, dead]
+WALKABLE = [floor, dirt1, dirt2, dirt3, dead, exit]
 DIRT = [dirt1, dirt2, dirt3]
 ENTITY_SPRITES = [player, orc]
 
@@ -41,6 +47,7 @@ COLORS = {
   dirt3: (87,65,47),
   orc: (255,0,0),
   dead: (20,20,20),
+  exit: (0,255,0),
   'currHealth': (0,255,0),
   'maxHealth': (120,0,0),
 }
@@ -85,6 +92,16 @@ SPRITES = {
     "..0..0..",
     ".000000.",
     "..0..0..",
+    "........",
+  ],
+  exit: [
+    "........",
+    "..0000..",
+    ".0....0.",
+    ".0....0.",
+    ".0..0.0.",
+    ".0....0.",
+    ".000000.",
     "........",
   ],
   floor: [

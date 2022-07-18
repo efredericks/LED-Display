@@ -1,3 +1,11 @@
+# todo!
+# - minimap
+# - exit condition
+# - multiple levels
+# - different generation methods
+# - text
+# - enemies via config
+
 from evdev import InputDevice, categorize, ecodes
 from copy import deepcopy
 import flaschen
@@ -69,7 +77,19 @@ class RLGame():
 
         #self.game_map = self.generateMap()
         self.mapGen = MapGenerator(width=MAP_COLS, height=MAP_ROWS)
-        self.game_map, p_c, p_r = self.mapGen.generateBSP()
+
+        # get map info
+        bsp = self.mapGen.generateBSP()
+        self.game_map = bsp['map']
+        p_c = bsp['player_start']['c']
+        p_r = bsp['player_start']['r']
+        self.exit_c = bsp['exit']['c']
+        self.exit_r = bsp['exit']['r']
+        #self.game_map, p_c, p_r = self.mapGen.generateBSP()
+
+        self.wonR = -1 # drawing animation
+
+
         print(self.game_map)
         #p_c, p_r = self.getValidPos()
         self.player = Player(p_c,p_r)#int(MAP_COLS/2), int(MAP_ROWS/2))#3, 3)
@@ -81,7 +101,7 @@ class RLGame():
 
         self.KEYCODES = {
           'L': {'key': 294,'callback': self.player.update, 'param': (ACTIONS.WAIT)},
-          'R': {'key': 295,'callback': None},
+          'R': {'key': 295,'callback': self.debug, 'param': 'win'},
           'A': {'key': 288,'callback': None},
           'B': {'key': 289,'callback': None},
           'X': {'key': 291,'callback': None},
@@ -89,6 +109,12 @@ class RLGame():
           'START':{'key': 299, 'callback': None},
           'SELECT':{'key': 298, 'callback': None},
         }
+
+    def debug(self, param):
+        if param == 'win':
+            self.wonR = 0
+            return "done"
+
 
 
     def debounce(self):
@@ -314,8 +340,17 @@ class RLGame():
                         self.player.c = next_c
                         self.player.r = next_r
 
+                    # did we ascend?
+                    if self.player.c == self.exit_c and self.player.r == self.exit_r:
+                        print("Winner winner.")
+                        done = True
+                        self.wonR = 0
+                        break
+
+
 
             if dirty:
+                print(self.player.c, self.player.r, self.exit_c, self.exit_r)
                 for e in self.entities:
                     if e.sprite is not dead:
                         neighbors = self.getNeighbors(e)
@@ -343,6 +378,13 @@ class RLGame():
 
 
             if done:
+                if self.wonR >= 0:
+                    while self.wonR < self.ft.height:
+                        self.pixels[self.wonR,:] = (0,255,0)
+                        self.ft.send()
+                        sleep(0.05)
+                        self.wonR += 1
+
                 break
 
             sleep(0.10)
