@@ -7,6 +7,8 @@
 # - enemies via config
 
 from evdev import InputDevice, categorize, ecodes
+from dev_gui import GUIController
+
 from copy import deepcopy
 import flaschen
 import random
@@ -16,6 +18,8 @@ from select import select
 from roguelike_sprites import *
 from roguelike_map_gen import *
 from typing import *
+from threading import Thread
+from queue import Queue
 
 directions = [
   [0,-1],
@@ -68,11 +72,24 @@ class Player(MoveableEntity):
 def cb():
     print("WHOA NELLY")
 
+# thread out GUI controller to avoid locking up main loop
+# Queue object passed in for messaging
+def guiThread(q):
+    guicontroller = GUIController(q)
+
 class RLGame():
     def __init__(self, ft, gamepad, pixels):
         self.ft = ft
         self.gamepad = gamepad
         self.pixels = pixels
+
+        #self.guicontroller = None
+        if self.gamepad is None:
+            self.queue = Queue()
+            self.gui_thread = Thread(target=guiThread, args=(self.queue,))
+            self.gui_thread.start()
+
+            #self.guicontroller = GUIController()
 
         self.debounce_delay = 10/1000
 
@@ -101,12 +118,12 @@ class RLGame():
             self.entities.append(MoveableEntity(orc, e_c, e_r, hp=3, atk=1))
 
         self.KEYCODES = {
-          'L': {'key': 294,'callback': self.player.update, 'param': (ACTIONS.WAIT)},
-          'R': {'key': 295,'callback': self.debug, 'param': 'win'},
-          'A': {'key': 288,'callback': None},
-          'B': {'key': 289,'callback': None},
-          'X': {'key': 291,'callback': None},
-          'Y': {'key': 292,'callback': None},
+          'K_L': {'key': 294,'callback': self.player.update, 'param': (ACTIONS.WAIT)},
+          'K_R': {'key': 295,'callback': self.debug, 'param': 'win'},
+          'K_A': {'key': 288,'callback': None},
+          'K_B': {'key': 289,'callback': None},
+          'K_X': {'key': 291,'callback': None},
+          'K_Y': {'key': 292,'callback': None},
           'START':{'key': 299, 'callback': None},
           'SELECT':{'key': 298, 'callback': None},
         }
@@ -272,9 +289,19 @@ class RLGame():
         return {'positions': valid_positions, 'isPlayer': isPlayer}
 
 
-    def GUIkeys(self) -> List[int]:
-        return [self.KEYCODES['L']['key']]
+    def GUIkeys(self):
+        data = self.queue.get()
+        button_keys = ["K_A", "K_B", "K_X", "K_Y", "K_L", "K_R", "START", "SELECT"]
+        arrow_keys = ["Y", "K", "U", "H", ".", "L", "B", "J", "N"]
 
+        if data in button_keys:
+            return "button", [self.KEYCODES[data]['key']]
+        elif data in arrow_keys:
+            return "arrow", [data]
+        elif data == "L+R":
+            return "button", [self.KEYCODES["K_L"]['key'], self.KEYCODES["K_R"]['key']]
+        else:
+            return None, None
 
     def execute(self):
         print("Running Roguelike game.")
@@ -292,25 +319,27 @@ class RLGame():
             #keys = self.gamepad.active_keys()
             if self.gamepad is not None:
                 keys = self.debounce()
+                gui_action = None
             else:
-                keys = self.GUIkeys()
+                gui_action, keys = self.GUIkeys()
 
             # keyboard events
-            for k,v in self.KEYCODES.items():
-                if v["key"] in keys:
-                    dirty = True
-                    if v["callback"] is not None:
-
-                        if 'param' in v.keys():
-                            r = v["callback"](v["param"])
-                        else:
-                            r = v["callback"]()
-
-                        if r == "done":
-                            done = True
+            if len(keys) == 1:
+                for k,v in self.KEYCODES.items():
+                    if v["key"] in keys:
+                        dirty = True
+                        if v["callback"] is not None:
+    
+                            if 'param' in v.keys():
+                                r = v["callback"](v["param"])
+                            else:
+                                r = v["callback"]()
+    
+                            if r == "done":
+                                done = True
 
             # multiple key handler (irrespective of mode)
-            if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
+            if self.KEYCODES["K_L"]["key"] in keys and self.KEYCODES["K_R"]["key"] in keys:
                 done = True
 
             # dpad events
@@ -330,11 +359,41 @@ class RLGame():
                     dirty = True
                     next_r += 1
             else:
-                if (random.random() > 0.8):
-                    d = random.choice(directions)
-                    next_r += d[1]
-                    next_c += d[0]
+                if gui_action == "arrow":
+                    #arrow_keys = ["Y", "K", "U", "H", ".", "L", "B", "J", "N"]
+                    k = keys[0]
                     dirty = True
+                    if k == "Y":
+                        next_r -= 1
+                        next_c -= 1
+                    elif k == "K":
+                        next_r -= 1
+                    elif k == "U":
+                        next_r -= 1
+                        next_c += 1
+                    elif k == "H":
+                        next_c -= 1
+                    elif k == ".": 
+                        self.player.update(ACTIONS.WAIT)
+                    elif k == "L":
+                        next_c += 1
+                    elif k == "B":
+                        next_r += 1
+                        next_c -= 1
+                    elif k == "J":
+                        next_r += 1
+                    elif k == "N":
+                        next_r += 1
+                        next_c += 1
+                    
+
+
+
+                #if (random.random() > 0.8):
+                #    d = random.choice(directions)
+                #    next_r += d[1]
+                #    next_c += d[0]
+                #    dirty = True
 
             if dirty and self.isValid(next_c, next_r):
                 enemyThere = False
@@ -391,6 +450,9 @@ class RLGame():
 
 
             if done:
+                if self.gamepad is None:
+                    self.gui_thread.join()
+
                 if self.wonR >= 0:
                     while self.wonR < self.ft.height:
                         self.pixels[self.wonR,:] = (0,255,0)
