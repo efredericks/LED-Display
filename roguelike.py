@@ -15,6 +15,7 @@ from time import sleep
 from select import select
 from roguelike_sprites import *
 from roguelike_map_gen import *
+from typing import *
 
 directions = [
   [0,-1],
@@ -271,6 +272,9 @@ class RLGame():
         return {'positions': valid_positions, 'isPlayer': isPlayer}
 
 
+    def GUIkeys(self) -> List[int]:
+        return [self.KEYCODES['L']['key']]
+
 
     def execute(self):
         print("Running Roguelike game.")
@@ -288,28 +292,31 @@ class RLGame():
             #keys = self.gamepad.active_keys()
             if self.gamepad is not None:
                 keys = self.debounce()
+            else:
+                keys = self.GUIkeys()
 
-                # keyboard events
-                for k,v in self.KEYCODES.items():
-                    if v["key"] in keys:
-                        dirty = True
-                        if v["callback"] is not None:
+            # keyboard events
+            for k,v in self.KEYCODES.items():
+                if v["key"] in keys:
+                    dirty = True
+                    if v["callback"] is not None:
 
-                            if 'param' in v.keys():
-                                r = v["callback"](v["param"])
-                            else:
-                                r = v["callback"]()
+                        if 'param' in v.keys():
+                            r = v["callback"](v["param"])
+                        else:
+                            r = v["callback"]()
 
-                            if r == "done":
-                                done = True
+                        if r == "done":
+                            done = True
 
-                # multiple key handler (irrespective of mode)
-                if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
-                    done = True
+            # multiple key handler (irrespective of mode)
+            if self.KEYCODES["L"]["key"] in keys and self.KEYCODES["R"]["key"] in keys:
+                done = True
 
-                # dpad events
-                next_r = self.player.r
-                next_c = self.player.c
+            # dpad events
+            next_r = self.player.r
+            next_c = self.player.c
+            if self.gamepad is not None:
                 if self.gamepad.absinfo(ecodes.ABS_X).value < 128:
                     dirty = True
                     next_c -= 1
@@ -322,35 +329,41 @@ class RLGame():
                 if self.gamepad.absinfo(ecodes.ABS_Y).value > 128:
                     dirty = True
                     next_r += 1
+            else:
+                if (random.random() > 0.8):
+                    d = random.choice(directions)
+                    next_r += d[1]
+                    next_c += d[0]
+                    dirty = True
 
-                if self.isValid(next_c, next_r):
-                    enemyThere = False
-                    deadEntity = False
-                    for e in self.entities:
-                        if next_c == e.c and next_r == e.r:
-                            enemyThere = True
-                            e.hp -= 1
-                            if e.hp < 0: 
-                                e.hp = 0
-                                e.sprite = dead
-                                deadEntity = True
+            if dirty and self.isValid(next_c, next_r):
+                enemyThere = False
+                deadEntity = False
+                for e in self.entities:
+                    if next_c == e.c and next_r == e.r:
+                        enemyThere = True
+                        e.hp -= 1
+                        if e.hp < 0: 
+                            e.hp = 0
+                            e.sprite = dead
+                            deadEntity = True
 
-                    # blank spot or there is a corpse but it is dead
-                    if not enemyThere or (enemyThere and deadEntity):
-                        self.player.c = next_c
-                        self.player.r = next_r
+                # blank spot or there is a corpse but it is dead
+                if not enemyThere or (enemyThere and deadEntity):
+                    self.player.c = next_c
+                    self.player.r = next_r
 
-                    # did we ascend?
-                    if self.player.c == self.exit_c and self.player.r == self.exit_r:
-                        print("Winner winner.")
-                        done = True
-                        self.wonR = 0
-                        break
+                # did we ascend?
+                if self.player.c == self.exit_c and self.player.r == self.exit_r:
+                    print("Winner winner.")
+                    done = True
+                    self.wonR = 0
+                    break
 
 
 
             if dirty:
-                print(self.player.c, self.player.r, self.exit_c, self.exit_r)
+                #print(self.player.c, self.player.r, self.exit_c, self.exit_r)
                 for e in self.entities:
                     if e.sprite is not dead:
                         neighbors = self.getNeighbors(e)
@@ -362,12 +375,12 @@ class RLGame():
                                     self.player.hp = 0
                                     self.player.sprite = dead
                                     done = True
-
+    
                             elif action['c'] is not None and action['r'] is not None:
                                 if self.isValid(action['c'], action['r']): # otherwise move
                                     e.c = action['c']
                                     e.r = action['r']
-
+    
             
                 self.drawMap()
                 #self.drawCell(self.player['c'], self.player['r'], player)
@@ -384,10 +397,10 @@ class RLGame():
                         self.ft.send()
                         sleep(0.05)
                         self.wonR += 1
-
+    
                 break
 
-            sleep(0.10)
+        sleep(0.10)
 
         self.ft.send()
         print("Done")
