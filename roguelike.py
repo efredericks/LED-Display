@@ -1,10 +1,10 @@
 # todo!
 # - minimap
-# - exit condition
 # - multiple levels
 # - different generation methods
 # - text
 # - enemies via config
+# - add type hinting to all functions
 
 from evdev import InputDevice, categorize, ecodes
 from dev_gui import GUIController
@@ -21,6 +21,7 @@ from typing import *
 from threading import Thread
 from queue import Queue
 
+# 8-way direction table
 directions = [
   [0,-1],
   [1,0],
@@ -40,7 +41,7 @@ class MoveableEntity():
         self.hp = hp
         self.maxHP = hp
         self.atk = atk
-        self.cooldown = 2
+        self.cooldown = 2 # avoid attacking the instant that a player sidles up next to them
 
     # only update non-player entities (for now)
     def update(self, neighbors):
@@ -69,31 +70,26 @@ class Player(MoveableEntity):
         return ""
 
 
-def cb():
-    print("WHOA NELLY")
-
 # thread out GUI controller to avoid locking up main loop
 # Queue object passed in for messaging
 def guiThread(q):
     guicontroller = GUIController(q)
 
+# Main game class
 class RLGame():
     def __init__(self, ft, gamepad, pixels):
         self.ft = ft
         self.gamepad = gamepad
         self.pixels = pixels
 
-        #self.guicontroller = None
         if self.gamepad is None:
             self.queue = Queue()
             self.gui_thread = Thread(target=guiThread, args=(self.queue,))
             self.gui_thread.start()
 
-            #self.guicontroller = GUIController()
 
         self.debounce_delay = 10/1000
 
-        #self.game_map = self.generateMap()
         self.mapGen = MapGenerator(width=MAP_COLS, height=MAP_ROWS)
 
         # get map info
@@ -103,14 +99,11 @@ class RLGame():
         p_r = bsp['player_start']['r']
         self.exit_c = bsp['exit']['c']
         self.exit_r = bsp['exit']['r']
-        #self.game_map, p_c, p_r = self.mapGen.generateBSP()
 
         self.wonR = -1 # drawing animation
 
-
-        print(self.game_map)
-        #p_c, p_r = self.getValidPos()
-        self.player = Player(p_c,p_r)#int(MAP_COLS/2), int(MAP_ROWS/2))#3, 3)
+        # player creation/location
+        self.player = Player(p_c,p_r)
 
         self.entities = []
         for _ in range(ENEMIES_PER_CHUNK):
@@ -128,53 +121,18 @@ class RLGame():
           'SELECT':{'key': 298, 'callback': None},
         }
 
-    def debug(self, param):
+    def debug(self, param) -> str:
         if param == 'win':
             self.wonR = 0
             return "done"
 
-
-
-    def debounce(self):
+    def debounce(self) -> List[int]:
         keys = self.gamepad.active_keys()
         sleep(self.debounce_delay)
         return list(set(keys).intersection(self.gamepad.active_keys()))
 
-    """
-    def generateMap(self):
-        game_map = [[wall]*MAP_COLS for _ in range(MAP_ROWS)]
-
-        # random walk
-        center_c = int(MAP_COLS / 2)
-        center_r = int(MAP_ROWS / 2)
-        for _ in range(50): # iterations
-            curr_c = center_c
-            curr_r = center_r
-            for _ in range(500): # life
-                d = random.choice(directions)
-                next_c = curr_c + d[0]
-                next_r = curr_r + d[1]
-                if next_c > 0 and next_c < len(game_map[0])-2 and \
-                   next_r > 0 and next_r < len(game_map)-2:
-                    game_map[next_r][next_c] = random.choice(DIRT)
-                    curr_c = next_c
-                    curr_r = next_c
-
-
-        # ensure walled edges
-        for r in range(MAP_ROWS):
-            for c in range(MAP_COLS):
-                if r == 0 or c == 0 or r == MAP_ROWS-1 or c == MAP_COLS-1:
-                    game_map[r][c] = wall
-                #else:
-                #    if (random.random() > 0.7):
-                #        game_map[r][c] = random.choice(DIRT)
-
-
-        return game_map
-    """
-
-    def getValidPos(self):
+    # get a random valid position
+    def getValidPos(self) -> Tuple[int,int]:
         r = random.randint(1,MAP_ROWS-1)
         c = random.randint(1,MAP_COLS-1)
         while not self.isValid(c, r):
@@ -182,7 +140,8 @@ class RLGame():
             c = random.randint(1,MAP_COLS-1)
         return c,r
 
-    def isValid(self, c, r):
+    # check if a cell is valid and walkable
+    def isValid(self, c, r) -> bool:
         if c < 0 or c > len(self.game_map[0])-1 or r < 0 or r > len(self.game_map)-1:
             return False
         if self.game_map[r][c] not in WALKABLE:
@@ -195,14 +154,11 @@ class RLGame():
             for x in range(self.ft.width):
                 self.ft.set(x,y,col)
 
+    # set pixels per cell
     def drawCell(self, c, r, char, hp_perc=None):
-        #if char is None:
-        #    char = self.game_map[r][c]
-
         # actual position
         startx = c * CELLSIZE
         starty = r * CELLSIZE
-
 
         numgreen = 0
         if hp_perc is not None:
@@ -214,14 +170,18 @@ class RLGame():
             for x in range(CELLSIZE):
                 if hp_perc is not None and char is not dead and y == CELLSIZE-1:
                     if x < numgreen:
-                        self.ft.set(startx+x, starty+y, COLORS['currHealth'])
+                        self.pixels[starty+y, startx+x] = COLORS['currHealth']
+                        #self.ft.set(startx+x, starty+y, COLORS['currHealth'])
                     else:
-                        self.ft.set(startx+x, starty+y, COLORS['maxHealth'])
+                        self.pixels[starty+y, startx+x] = COLORS['maxHealth']
+                        #self.ft.set(startx+x, starty+y, COLORS['maxHealth'])
 
                 elif SPRITES[char][y][x] == "0":
-                    self.ft.set(startx+x, starty+y, COLORS[char])
+                    self.pixels[starty+y, startx+x] = COLORS[char]
+                    #self.ft.set(startx+x, starty+y, COLORS[char])
                 else:
-                    self.ft.set(startx+x, starty+y, COLORS[clear])
+                    self.pixels[starty+y, startx+x] = COLORS[clear]
+                    #self.ft.set(startx+x, starty+y, COLORS[clear])
 
 
 

@@ -5,6 +5,7 @@ from enum import Enum
 # 2) give it a color
 # 3) create the sprite (8x8)
 
+# lookup code
 player = "@"
 orc = "o"
 dirt1 = 'd1'
@@ -16,10 +17,12 @@ clear = ' '
 dead = '%'
 exit = 'e'
 
+# lookup tables
 WALKABLE = [floor, dirt1, dirt2, dirt3, dead, exit]
 DIRT = [dirt1, dirt2, dirt3]
 ENTITY_SPRITES = [player, orc]
 
+# defines
 ENEMIES_PER_CHUNK = 50
 
 CELLSIZE = 8

@@ -23,8 +23,8 @@ parser.add_argument("--autostart", default=None, help="sand|RL")
 args = parser.parse_args()
 
 # setup flaschen-taschen connection 
-UDP_IP = args.IP#'localhost'
-UDP_PORT = args.port#1337
+UDP_IP = args.IP
+UDP_PORT = args.port
 ft = flaschen.Flaschen(UDP_IP, UDP_PORT, 64, 64)
 pixels = np.asarray(ft)
 
