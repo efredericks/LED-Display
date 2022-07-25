@@ -38,3 +38,31 @@ All keys will trigger a time step, so pressing a key that is not mapped will cau
 2. Write up a clear bill of materials and setup guide.
 3. Harden the hardware installation so that it can be used and abused in a public space.
 4. Write a better hand-holding set of steps in this guide.
+
+## Screenshots / GIFs
+
+### [Week 1 updates](https://www.reddit.com/r/roguelikedev/comments/vm9yam/roguelikedev_does_the_complete_roguelike_tutorial/ie4sv5d/)
+
+![Initial attempt](https://i.imgur.com/L0ylMVa.jpg)
+
+### [Week 2 updates](https://www.reddit.com/r/roguelikedev/comments/vrnoay/roguelikedev_does_the_complete_roguelike_tutorial/iey4lje/)
+
+![Main screen + other demos](https://i.imgur.com/5uj3naj.gifv)
+
+![RL screen](https://i.imgur.com/EaHqdmb.jpg)
+
+![Character movement + attacking](https://i.imgur.com/eQwk6TZ.gifv)
+
+![Sprite setup](https://i.imgur.com/rR37DIf.png)
+
+### [Week 3 updates](https://www.reddit.com/r/roguelikedev/comments/vx0cgm/roguelikedev_does_the_complete_roguelike_tutorial/ifuq7pm/)
+
+![Local development/testing](https://i.imgur.com/kq2DIQY.png)
+
+![BSP map added](https://i.imgur.com/mAUspe7.gifv)
+
+### [Week 4 updates](https://www.reddit.com/r/roguelikedev/comments/w2c8t8/roguelikedev_does_the_complete_roguelike_tutorial/igqin2i/)
+
+![Enemy attacking](https://i.imgur.com/8Fqh0vI.gifv)
+
+![Exit condition](https://i.imgur.com/sTMjvjy.gifv)
