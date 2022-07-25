@@ -12,6 +12,7 @@ import numpy as np
 # game imports
 import flaschen
 from helpers import *
+
 import sand, snake, tetris, roguelike, runner
 
 parser = argparse.ArgumentParser()
