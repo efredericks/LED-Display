@@ -82,9 +82,12 @@ class RLGame():
         self.gamepad = gamepad
         self.pixels = pixels
 
+        self.miniMapActive = False
+
         if self.gamepad is None:
             self.queue = Queue()
             self.gui_thread = Thread(target=guiThread, args=(self.queue,))
+            self.gui_thread.daemon = True
             self.gui_thread.start()
 
 
@@ -118,8 +121,11 @@ class RLGame():
           'K_X': {'key': 291,'callback': None},
           'K_Y': {'key': 292,'callback': None},
           'START':{'key': 299, 'callback': None},
-          'SELECT':{'key': 298, 'callback': None},
+          'SELECT':{'key': 298, 'callback': self.showMiniMap},
         }
+
+    def showMiniMap(self):
+        self.miniMapActive = not self.miniMapActive
 
     def debug(self, param) -> str:
         if param == 'win':
@@ -185,55 +191,56 @@ class RLGame():
 
 
 
-    def drawMap(self):
-        startr = 0
-        startc = 0
-
+    def drawMap(self) -> None:
         # sliding window around player
-        if self.player.c < HALF_CAM_C: 
-            startc = 0
-        elif self.player.c >= MAP_COLS - HALF_CAM_C:
-            startc = MAP_COLS - NUMCELLS
-        else:
-            startc = self.player.c - HALF_CAM_C
-
-        if self.player.r < HALF_CAM_R: 
+        if not self.miniMapActive:
             startr = 0
-        elif self.player.r >= MAP_ROWS - HALF_CAM_R:
-            startr = MAP_ROWS - NUMCELLS
-        else:
-            startr = self.player.r - HALF_CAM_R
+            startc = 0
+
+            # sliding window around player
+            if self.player.c < HALF_CAM_C: 
+                startc = 0
+            elif self.player.c >= MAP_COLS - HALF_CAM_C:
+                startc = MAP_COLS - NUMCELLS
+            else:
+                startc = self.player.c - HALF_CAM_C
+
+            if self.player.r < HALF_CAM_R: 
+                startr = 0
+            elif self.player.r >= MAP_ROWS - HALF_CAM_R:
+                startr = MAP_ROWS - NUMCELLS
+            else:
+                startr = self.player.r - HALF_CAM_R
 
 
-        # draw map
-        _r = 0 # screen coords
-        _c = 0
-        endr = startr + NUMCELLS
-        endc = startc + NUMCELLS
-        for r in range(startr, endr):
-            for c in range(startc, endc):
-                self.drawCell(_c, _r, self.game_map[r][c])
-
-                for e in self.entities:
-                    if e.r >= startr and e.r < endr and e.c >= startc and e.c < endc:
-                        if r == e.r and c == e.c:
-                            self.drawCell(_c, _r, e.sprite, e.hp / e.maxHP)
-
-                if r == self.player.r and c == self.player.c:
-                  self.drawCell(_c, _r, self.player.sprite, self.player.hp / self.player.maxHP)
-
-                _c += 1
+            # draw map
+            _r = 0 # screen coords
             _c = 0
-            _r += 1
+            endr = startr + NUMCELLS
+            endc = startc + NUMCELLS
+            for r in range(startr, endr):
+                for c in range(startc, endc):
+                    self.drawCell(_c, _r, self.game_map[r][c])
+    
+                    for e in self.entities:
+                        if e.r >= startr and e.r < endr and e.c >= startc and e.c < endc:
+                            if r == e.r and c == e.c:
+                                self.drawCell(_c, _r, e.sprite, e.hp / e.maxHP)
+    
+                    if r == self.player.r and c == self.player.c:
+                      self.drawCell(_c, _r, self.player.sprite, self.player.hp / self.player.maxHP)
+    
+                    _c += 1
+                _c = 0
+                _r += 1
+
+        else: # draw minimap
+            for r in range(len(self.game_map)):
+                for c in range(len(self.game_map[0])):
+                    self.pixels[r,c] = COLORS[self.game_map[r][c]]
+            self.pixels[self.player.r, self.player.c] = COLORS[player]
 
         
-#        for r in range(NUMCELLS):#len(self.game_map)):
-#            for c in range(NUMCELLS):#len(self.game_map[0])):
-#                self.drawCell(c, r)
-
-        #for y in xrange(self.ft.height):
-        #    for x in xrange(self.ft.width):
-                #self.ft.set(x, y, COLORS[self.maze[y][x]])
 
     def getNeighbors(self, e):
         valid_positions = []
@@ -383,22 +390,23 @@ class RLGame():
 
             if dirty:
                 #print(self.player.c, self.player.r, self.exit_c, self.exit_r)
-                for e in self.entities:
-                    if e.sprite is not dead:
-                        neighbors = self.getNeighbors(e)
-                        action = e.update(neighbors)
-                        if action is not None:
-                            if action['attack'] is not None: # prefer attack
-                                self.player.hp -= action['attack']
-                                if self.player.hp <= 0:
-                                    self.player.hp = 0
-                                    self.player.sprite = dead
-                                    done = True
+                if not self.miniMapActive:
+                    for e in self.entities:
+                        if e.sprite is not dead:
+                            neighbors = self.getNeighbors(e)
+                            action = e.update(neighbors)
+                            if action is not None:
+                                if action['attack'] is not None: # prefer attack
+                                    self.player.hp -= action['attack']
+                                    if self.player.hp <= 0:
+                                        self.player.hp = 0
+                                        self.player.sprite = dead
+                                        done = True
     
-                            elif action['c'] is not None and action['r'] is not None:
-                                if self.isValid(action['c'], action['r']): # otherwise move
-                                    e.c = action['c']
-                                    e.r = action['r']
+                                elif action['c'] is not None and action['r'] is not None:
+                                    if self.isValid(action['c'], action['r']): # otherwise move
+                                        e.c = action['c']
+                                        e.r = action['r']
     
             
                 self.drawMap()
@@ -409,16 +417,17 @@ class RLGame():
 
 
 
+            # need to flag out our win condition better
             if done:
-                if self.gamepad is None:
-                    self.gui_thread.join()
-
                 if self.wonR >= 0:
                     while self.wonR < self.ft.height:
                         self.pixels[self.wonR,:] = (0,255,0)
                         self.ft.send()
                         sleep(0.05)
                         self.wonR += 1
+
+                if self.gamepad is None:
+                    self.gui_thread.join()
     
                 break
 

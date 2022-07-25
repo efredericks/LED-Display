@@ -29,8 +29,8 @@ CELLSIZE = 8
 NUMCELLS = int(64/8) # 64 = # of pixels on LED array (ft.width)
 
 # the whole map
-MAP_ROWS = 100
-MAP_COLS = 100
+MAP_ROWS = 64#100
+MAP_COLS = 64#100
 
 # the screen
 HALF_CAM_R = int(NUMCELLS / 2)
@@ -50,7 +50,7 @@ COLORS = {
   dirt3: (87,65,47),
   orc: (255,0,0),
   dead: (20,20,20),
-  exit: (0,255,0),
+  exit: (255,120,0),
   'currHealth': (0,255,0),
   'maxHealth': (120,0,0),
 }

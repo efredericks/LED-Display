@@ -49,8 +49,8 @@ class GUIController:
         self.btn_KB.grid(row=2,column=4,sticky="ew",padx=5,pady=5)
         self.btn_KX.grid(row=1,column=4,sticky="ew",padx=5,pady=5)
         self.btn_KY.grid(row=1,column=5,sticky="ew",padx=5,pady=5)
-        self.btn_KL .grid(row=0,column=4,sticky="ew",padx=5,pady=5)
-        self.btn_KR .grid(row=0,column=5,sticky="ew",padx=5,pady=5)
+        self.btn_KL.grid(row=0,column=4,sticky="ew",padx=5,pady=5)
+        self.btn_KR.grid(row=0,column=5,sticky="ew",padx=5,pady=5)
         self.btn_START.grid(row=1,column=6,sticky="ew",padx=5,pady=5)
         self.btn_SELECT.grid(row=0,column=6,sticky="ew",padx=5,pady=5)
         self.btn_LR.grid(row=2,column=6,sticky="ew",padx=5,pady=5)
@@ -58,9 +58,11 @@ class GUIController:
 
         self.window.mainloop()
 
+    def handleQuit(self):
+        self.window.quit()
+
     def handleGUIButton(self, arg):
         self.queue.put(arg)
 
         if arg == "L+R":
-            self.window.quit()
-        #print(arg)
+            self.handleQuit()
