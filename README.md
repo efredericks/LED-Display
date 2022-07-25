@@ -1,10 +1,10 @@
 # LED-Display
 
-This project is intended for student outreach to demonstrate how much fun you can have with a Raspberry Pi and some hardware.  Currently the focus is developing a Roguelike (loosely following the [/r/roguelikedev tutorial series](http://rogueliketutorials.com/tutorials/tcod/v2/){:target="_blank"}), however there are a handful of other demos that are half-developed as well!
+This project is intended for student outreach to demonstrate how much fun you can have with a Raspberry Pi and some hardware.  Currently the focus is developing a Roguelike (loosely following the [/r/roguelikedev tutorial series](http://rogueliketutorials.com/tutorials/tcod/v2/)), however there are a handful of other demos that are half-developed as well!
 
 ## Dependencies:
 
-* [Flaschen-Taschen](https://github.com/hzeller/flaschen-taschen){:target="_blank"} for communicating with the LED panel / simulating the LED panel
+* [Flaschen-Taschen](https://github.com/hzeller/flaschen-taschen) for communicating with the LED panel / simulating the LED panel
 * Python 3 - see `requirements.txt`
 
 ## Running in hardware mode
