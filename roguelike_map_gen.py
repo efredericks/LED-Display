@@ -30,7 +30,7 @@ class RectangularRoom:
 
   @property
   def inner(self) -> Tuple[slice, slice]:
-    return slice(self.x1 + 1, self.x2), slice(self.y1 + 1, self.y2)
+    return slice(self.y1 + 1, self.y2), slice(self.x1 + 1, self.x2)
 
   @property
   def randomPos(self) -> Tuple[int, int]:
@@ -70,7 +70,7 @@ class MapGenerator:
 
   # Returns a map filled with walls to be dug
   def initMap(self):
-    return np.full((self.width,self.height), fill_value=wall)
+    return np.full((self.height,self.width), fill_value=wall)
 
   def generateCA(self):
     pass
@@ -104,6 +104,8 @@ class MapGenerator:
 
       gameMap[new_room.inner] = floor
 
+
+
       if len(rooms) == 0:
         player_start_x, player_start_y = new_room.center
       else:
@@ -124,9 +126,10 @@ class MapGenerator:
     #  gameMap[y, x] = floor
 
     # return the *singular* exit (for now)
+    exit_room = random.choice(rooms)
     if not exitPlaced:
         exitPlaced = True
-        exit_x, exit_y = new_room.randomPos
+        exit_x, exit_y = exit_room.randomPos
         gameMap[exit_y,exit_x] = exit
         print(exit_x, exit_y)
 
