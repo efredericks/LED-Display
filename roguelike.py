@@ -21,6 +21,8 @@ from typing import *
 from threading import Thread
 from queue import Queue
 
+from bdfparser import Font
+
 # 8-way direction table
 directions = [
   [0,-1],
@@ -123,6 +125,12 @@ class RLGame():
           'START':{'key': 299, 'callback': None},
           'SELECT':{'key': 298, 'callback': self.showMiniMap},
         }
+
+        # setup BDF font
+        self.font = Font("assets/ucs-fonts/4x6.bdf")
+        assert self.font is not None
+
+
 
     def showMiniMap(self):
         self.miniMapActive = not self.miniMapActive
@@ -239,6 +247,18 @@ class RLGame():
                 for c in range(len(self.game_map[0])):
                     self.pixels[r,c] = COLORS[self.game_map[r][c]]
             self.pixels[self.player.r, self.player.c] = COLORS[player]
+
+        # testing drawing - remove later
+        testText = self.font.draw("Hello there!")
+        testTextArr = np.array(testText.todata(2))
+
+        for _r in range(len(testTextArr)):
+            for _c in range(len(testTextArr[0])):
+                if testTextArr[_r,_c] == 1:
+                    self.pixels[_r,_c] = (0,255,0)
+
+
+
 
         
 
