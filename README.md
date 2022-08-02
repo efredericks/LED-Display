@@ -6,6 +6,8 @@ This project is intended for student outreach to demonstrate how much fun you ca
 
 * [Flaschen-Taschen](https://github.com/hzeller/flaschen-taschen) for communicating with the LED panel / simulating the LED panel
 * Python 3 - see `requirements.txt`
+  * libatlas (for BDF font parsing)
+  * [python-tcod dependencies](https://python-tcod.readthedocs.io/en/latest/installation.html#linux-debian-based)
 
 ## Running in hardware mode
 
