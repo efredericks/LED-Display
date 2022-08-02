@@ -91,7 +91,7 @@ class RLGame():
             self.gui_thread.start()
 
 
-        self.debounce_delay = 10/1000
+        self.debounce_delay = 100/1000
 
         self.mapGen = MapGenerator(width=MAP_COLS, height=MAP_ROWS)
 
@@ -281,8 +281,6 @@ class RLGame():
             # headless play
             if self.gamepad is None:
                 dirty = True
-            else: # reduce craziness
-                sleep(0.5)
 
             #keys = self.gamepad.active_keys()
             if self.gamepad is not None:
