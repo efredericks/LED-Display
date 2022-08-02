@@ -149,6 +149,15 @@ SPRITES = {
   ],
 }
 
+LETTERS = {
+  "a": [
+    ".000.",
+    "0...0",
+    "0..00",
+    ".00.0",
+  ],
+}
+
 ## functions
 
 #https://stackoverflow.com/questions/44338698/p5-js-map-function-in-python

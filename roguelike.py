@@ -281,7 +281,8 @@ class RLGame():
             # headless play
             if self.gamepad is None:
                 dirty = True
-                # sleep(0.5)
+            else: # reduce craziness
+                sleep(0.5)
 
             #keys = self.gamepad.active_keys()
             if self.gamepad is not None:

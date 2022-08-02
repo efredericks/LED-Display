@@ -66,3 +66,11 @@ All keys will trigger a time step, so pressing a key that is not mapped will cau
 ![Enemy attacking](https://i.imgur.com/8Fqh0vI.gifv)
 
 ![Exit condition](https://i.imgur.com/sTMjvjy.gifv)
+
+### [Week 5 updates](https://www.reddit.com/r/roguelikedev/comments/w8c6jo/roguelikedev_does_the_complete_roguelike_tutorial/ihpjrgz/)
+
+![Simulated controller](https://i.imgur.com/4LxNTbB.gifv)
+
+### [Week 6 updates](https://www.reddit.com/r/roguelikedev/comments/wdyzvc/week_6_parts_10_11_saveload_and_leveling_up/iilsy4v/)
+
+No pictures - bug fixing!
