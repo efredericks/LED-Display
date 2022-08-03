@@ -6,6 +6,8 @@
 # - enemies via config
 # - add type hinting to all functions
 
+# - maybe use the text lib now?
+
 from evdev import InputDevice, categorize, ecodes
 from dev_gui import GUIController
 
