@@ -5,7 +5,9 @@ from time import sleep
 import random
 
 
-font = Font("assets/ucs-fonts/5x8.bdf")
+# font = Font("assets/Roboto-Regular-8.bdf")
+# font = Font("assets/ucs-fonts/5x8.bdf")
+font = Font("assets/Pixuf-8.bdf")
 assert font is not None
 
 UDP_IP = 'localhost'
@@ -30,6 +32,7 @@ sprites = {
     "@": {'sprite':np.array(font.draw("@").todata(2), dtype=np.bool_), 'color': (0,220,0)},
     "O": {'sprite':np.array(font.draw("O").todata(2), dtype=np.bool_), 'color': (220,0,0)},
     "T": {'sprite':np.array(font.draw("T").todata(2), dtype=np.bool_), 'color': (220,0,0)},
+    "😊": {'sprite':np.array(font.draw("😊").todata(2), dtype=np.bool_), 'color': (220,0,220)},
 }
 
 #testText = font.draw("Hello_there_")
@@ -40,12 +43,14 @@ while True:
     for r in range(len(gameMap)):
         for c in range(len(gameMap[r])):
             if (random.random() > 0.8 and r > 0 and r < len(gameMap)-1 and c > 0 and c < len(gameMap[0])-1):
-                gameMap[r] = gameMap[r][:c] + random.choice(["O", ".", ".", "T", "@"]) + gameMap[r][c+1:]
+                gameMap[r] = gameMap[r][:c] + random.choice(["😊", "O", ".", ".", "T", "@"]) + gameMap[r][c+1:]
                 done = True
             char = gameMap[r][c]
 
             _r = r * 8
             _c = c * 8
+
+            print(sprites[char]['sprite'].shape[0], sprites[char]['sprite'].shape[1])
 
             out_pixels = pixels[_r:_r+sprites[char]['sprite'].shape[0], _c:_c+sprites[char]['sprite'].shape[1]]
             out_pixels[sprites[char]['sprite']] = sprites[char]['color']

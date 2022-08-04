@@ -1,13 +1,21 @@
 from enum import Enum
+from bdfparser import Font
+import numpy as np
 
 ## DEFINING A SPRITE
 # 1) give it a 'tile' (char)
 # 2) give it a color
 # 3) create the sprite (8x8)
 
+# setup BDF font
+font = Font("assets/Pixuf-8.bdf")
+#font = Font("assets/ucs-fonts/4x6.bdf")
+assert font is not None
+
 # lookup code
 player = "@"
-orc = "o"
+orc = "O"
+troll = "T"
 dirt1 = 'd1'
 dirt2 = 'd2'
 dirt3 = 'd3'
@@ -55,7 +63,18 @@ COLORS = {
   'maxHealth': (120,0,0),
 }
 
+SPRITES = {
+    wall: {'sprite': np.array(font.draw(wall).todata(2), dtype=np.bool_), 'color': (255,0,255)},
+    floor: {'sprite':np.array(font.draw(floor).todata(2), dtype=np.bool_), 'color': (20,20,20)},
+    player: {'sprite':np.array(font.draw(player).todata(2), dtype=np.bool_), 'color': (0,220,0)},
+    orc: {'sprite':np.array(font.draw(orc).todata(2), dtype=np.bool_), 'color': (220,0,0)},
+    troll: {'sprite':np.array(font.draw(troll).todata(2), dtype=np.bool_), 'color': (220,0,0)},
+    dead: {'sprite':np.array(font.draw(dead).todata(2), dtype=np.bool_), 'color': (220,0,0)},
+    exit: {'sprite':np.array(font.draw(exit).todata(2), dtype=np.bool_), 'color': (220,0,0)},
+}
+
 # 8x8
+"""
 SPRITES = {
   player: [
     "..0000..",
@@ -148,6 +167,7 @@ SPRITES = {
     "........",
   ],
 }
+"""
 
 ## functions
 

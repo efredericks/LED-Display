@@ -128,9 +128,6 @@ class RLGame():
           'SELECT':{'key': 298, 'callback': self.showMiniMap},
         }
 
-        # setup BDF font
-        self.font = Font("assets/ucs-fonts/4x6.bdf")
-        assert self.font is not None
 
 
 
@@ -173,8 +170,10 @@ class RLGame():
     # set pixels per cell
     def drawCell(self, c, r, char, hp_perc=None):
         # actual position
-        startx = c * CELLSIZE
-        starty = r * CELLSIZE
+        # startx = c * CELLSIZE
+        # starty = r * CELLSIZE
+        _c = c * CELLSIZE
+        _r = r * CELLSIZE
 
         numgreen = 0
         if hp_perc is not None:
@@ -182,26 +181,41 @@ class RLGame():
             if numgreen == 0: # make the last pip visible if we're at like 1hp
                 numgreen = 1
 
-        for y in range(CELLSIZE):
-            for x in range(CELLSIZE):
-                if hp_perc is not None and char is not dead and y == CELLSIZE-1:
-                    if x < numgreen:
-                        self.pixels[starty+y, startx+x] = COLORS['currHealth']
-                        #self.ft.set(startx+x, starty+y, COLORS['currHealth'])
-                    else:
-                        self.pixels[starty+y, startx+x] = COLORS['maxHealth']
-                        #self.ft.set(startx+x, starty+y, COLORS['maxHealth'])
+        out_pixels = self.pixels[_r:_r+SPRITES[char]['sprite'].shape[0], _c:_c+SPRITES[char]['sprite'].shape[1]]
+        out_pixels[SPRITES[char]['sprite']] = SPRITES[char]['color']
+        if hp_perc is not None and char is not dead: # render HP bar
+            _y = _r + CELLSIZE-1
+            for _x in range(CELLSIZE):
+              if _x < numgreen:
+                self.pixels[_y,_c+_x] = COLORS['currHealth']
+                self.pixels[_y,_c+_x] = COLORS['currHealth']
+              else:
+                self.pixels[_y,_c+_x] = COLORS['maxHealth']
+                self.pixels[_y,_c+_x] = COLORS['maxHealth']
 
-                elif SPRITES[char][y][x] == "0":
-                    self.pixels[starty+y, startx+x] = COLORS[char]
-                    #self.ft.set(startx+x, starty+y, COLORS[char])
-                else:
-                    self.pixels[starty+y, startx+x] = COLORS[clear]
-                    #self.ft.set(startx+x, starty+y, COLORS[clear])
+
+
+        # for y in range(CELLSIZE):
+        #     for x in range(CELLSIZE):
+        #         if hp_perc is not None and char is not dead and y == CELLSIZE-1:
+        #             if x < numgreen:
+        #                 self.pixels[starty+y, startx+x] = COLORS['currHealth']
+        #                 #self.ft.set(startx+x, starty+y, COLORS['currHealth'])
+        #             else:
+        #                 self.pixels[starty+y, startx+x] = COLORS['maxHealth']
+        #                 #self.ft.set(startx+x, starty+y, COLORS['maxHealth'])
+
+        #         elif SPRITES[char][y][x] == "0":
+        #             self.pixels[starty+y, startx+x] = COLORS[char]
+        #             #self.ft.set(startx+x, starty+y, COLORS[char])
+        #         else:
+        #             self.pixels[starty+y, startx+x] = COLORS[clear]
+        #             #self.ft.set(startx+x, starty+y, COLORS[clear])
 
 
 
     def drawMap(self) -> None:
+        self.pixels[:,:] = (0,0,0)
         # sliding window around player
         if not self.miniMapActive:
             startr = 0
@@ -251,13 +265,13 @@ class RLGame():
             self.pixels[self.player.r, self.player.c] = COLORS[player]
 
         # testing drawing - remove later
-        testText = self.font.draw("Hello there!")
-        testTextArr = np.array(testText.todata(2))
+        #testText = self.font.draw("Hello there!")
+        #testTextArr = np.array(testText.todata(2))
 
-        for _r in range(len(testTextArr)):
-            for _c in range(len(testTextArr[0])):
-                if testTextArr[_r,_c] == 1:
-                    self.pixels[_r,_c] = (0,255,0)
+        #for _r in range(len(testTextArr)):
+        #    for _c in range(len(testTextArr[0])):
+        #        if testTextArr[_r,_c] == 1:
+        #            self.pixels[_r,_c] = (0,255,0)
 
 
 
