@@ -33,7 +33,11 @@ ENTITY_SPRITES = [player, orc]
 # defines
 ENEMIES_PER_CHUNK = 50
 
+TEXTWIDTH = 5
 CELLSIZE = 8
+TEXTOFFSET = int((CELLSIZE - TEXTWIDTH) / 2)
+
+
 NUMCELLS = int(64/8) # 64 = # of pixels on LED array (ft.width)
 
 # the whole map

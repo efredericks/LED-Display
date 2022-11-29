@@ -38,7 +38,7 @@ directions = [
 ]
 
 class MoveableEntity():
-    def __init__(self, sprite, c, r, hp=5, atk=1):
+    def __init__(self, sprite, c, r, dlvl, hp=5, atk=1):
         self.sprite = sprite
         self.c = c
         self.r = r
@@ -46,6 +46,7 @@ class MoveableEntity():
         self.maxHP = hp
         self.atk = atk
         self.cooldown = 2 # avoid attacking the instant that a player sidles up next to them
+        self.dlvl = dlvl
 
     # only update non-player entities (for now)
     def update(self, neighbors):
@@ -65,7 +66,7 @@ class MoveableEntity():
 
 class Player(MoveableEntity):
     def __init__(self, c, r, hp=5):
-        super().__init__(player, c, r, hp)
+        super().__init__(player, c, r, 0, hp)
 
     def update(self, which):
         if which == ACTIONS.WAIT:
@@ -100,12 +101,16 @@ class RLGame():
         self.mapGen = MapGenerator(width=MAP_COLS, height=MAP_ROWS)
 
         # get map info
-        bsp = self.mapGen.generateBSP()
-        self.game_map = bsp['map']
-        p_c = bsp['player_start']['c']
-        p_r = bsp['player_start']['r']
-        self.exit_c = bsp['exit']['c']
-        self.exit_r = bsp['exit']['r']
+        self.game_map = []
+        for i in range(5):
+          bsp = self.mapGen.generateBSP()
+          self.game_map.append(bsp['map'])
+
+          if i == 0:
+            p_c = bsp['player_start']['c']
+            p_r = bsp['player_start']['r']
+            self.exit_c = bsp['exit']['c']
+            self.exit_r = bsp['exit']['r']
 
         self.wonR = -1 # drawing animation
 
@@ -115,13 +120,13 @@ class RLGame():
         self.entities = []
         for _ in range(ENEMIES_PER_CHUNK):
             e_c, e_r = self.getValidPos()
-            self.entities.append(MoveableEntity(orc, e_c, e_r, hp=3, atk=1))
+            self.entities.append(MoveableEntity(orc, e_c, e_r, dlvl=0, hp=3, atk=1))
 
         self.KEYCODES = {
           'K_L': {'key': 294,'callback': self.player.update, 'param': (ACTIONS.WAIT)},
           'K_R': {'key': 295,'callback': self.debug, 'param': 'win'},
           'K_A': {'key': 288,'callback': None},
-          'K_B': {'key': 289,'callback': None},
+          'K_B': {'key': 289,'callback': self.debug, 'param': 'inc'},
           'K_X': {'key': 291,'callback': None},
           'K_Y': {'key': 292,'callback': None},
           'START':{'key': 299, 'callback': None},
@@ -138,6 +143,8 @@ class RLGame():
         if param == 'win':
             self.wonR = 0
             return "done"
+        elif param == 'inc':
+            self.player.dlvl += 1
 
     def debounce(self) -> List[int]:
         keys = self.gamepad.active_keys()
@@ -155,9 +162,9 @@ class RLGame():
 
     # check if a cell is valid and walkable
     def isValid(self, c, r) -> bool:
-        if c < 0 or c > len(self.game_map[0])-1 or r < 0 or r > len(self.game_map)-1:
+        if c < 0 or c > len(self.game_map[self.player.dlvl][0])-1 or r < 0 or r > len(self.game_map[self.player.dlvl])-1:
             return False
-        if self.game_map[r][c] not in WALKABLE:
+        if self.game_map[self.player.dlvl][r][c] not in WALKABLE:
             return False
         return True
 
@@ -185,13 +192,13 @@ class RLGame():
         out_pixels[SPRITES[char]['sprite']] = SPRITES[char]['color']
         if hp_perc is not None and char is not dead: # render HP bar
             _y = _r + CELLSIZE-1
-            for _x in range(CELLSIZE):
+            for _x in range(TEXTWIDTH):#CELLSIZE):
               if _x < numgreen:
-                self.pixels[_y,_c+_x] = COLORS['currHealth']
-                self.pixels[_y,_c+_x] = COLORS['currHealth']
+                self.pixels[_y,TEXTOFFSET+_c+_x] = COLORS['currHealth']
+                #self.pixels[_y,TEXTOFFSET+_c+_x] = COLORS['currHealth']
               else:
-                self.pixels[_y,_c+_x] = COLORS['maxHealth']
-                self.pixels[_y,_c+_x] = COLORS['maxHealth']
+                self.pixels[_y,TEXTOFFSET+_c+_x] = COLORS['maxHealth']
+                #self.pixels[_y,TEXTOFFSET+_c+_x] = COLORS['maxHealth']
 
 
 
@@ -244,7 +251,7 @@ class RLGame():
             endc = startc + NUMCELLS
             for r in range(startr, endr):
                 for c in range(startc, endc):
-                    self.drawCell(_c, _r, self.game_map[r][c])
+                    self.drawCell(_c, _r, self.game_map[self.player.dlvl][r][c])
     
                     for e in self.entities:
                         if e.r >= startr and e.r < endr and e.c >= startc and e.c < endc:
@@ -259,9 +266,9 @@ class RLGame():
                 _r += 1
 
         else: # draw minimap
-            for r in range(len(self.game_map)):
-                for c in range(len(self.game_map[0])):
-                    self.pixels[r,c] = COLORS[self.game_map[r][c]]
+            for r in range(len(self.game_map[self.player.dlvl])):
+                for c in range(len(self.game_map[self.player.dlvl][0])):
+                    self.pixels[r,c] = COLORS[self.game_map[self.player.dlvl][r][c]]
             self.pixels[self.player.r, self.player.c] = COLORS[player]
 
         # testing drawing - remove later
@@ -426,7 +433,8 @@ class RLGame():
             if dirty:
                 #print(self.player.c, self.player.r, self.exit_c, self.exit_r)
                 if not self.miniMapActive:
-                    for e in self.entities:
+                    level_entities = [e for e in self.entities if e.dlvl == self.player.dlvl]
+                    for e in level_entities: #self.entities:
                         if e.sprite is not dead:
                             neighbors = self.getNeighbors(e)
                             action = e.update(neighbors)
@@ -445,11 +453,8 @@ class RLGame():
     
             
                 self.drawMap()
-                #self.drawCell(self.player['c'], self.player['r'], player)
                 self.ft.send()
                 dirty = False
-
-
 
 
             # need to flag out our win condition better
